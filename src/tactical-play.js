@@ -113,7 +113,8 @@ function defend(plan,game,own,rotation,path,speed){
  }
  back.forEach((p,i)=>{
   const zone=zones[i], left=i===0?-4.4:(zones[i-1].z+zone.z)/2,right=i===2?4.4:(zones[i+1].z+zone.z)/2;
-  put(plan,p,orient(team,dx[i]+(zone.role==='Diagonal'?-.28:0),zone.z),zone.role);
+  const depth=p.role==='Central'?-4.15:dx[i]+(zone.role==='Diagonal'?-.28:0);
+  put(plan,p,orient(team,depth,zone.z),p.role==='Central'?'Cobertura intermediária':zone.role);
   plan.regions.push({team,x0:-9,x1:-3,z0:left,z1:right});
  });
  const front=remaining.filter(p=>!back.includes(p)).sort((a,b)=>
@@ -132,8 +133,9 @@ function cover(plan,own,rotation,origin,attacker,state){
  const depthRow=rotations[rotation].cover;
  if(state.coverOrigin!==origin){
   state.coverOrigin=origin;
+  const keepsShort=p=>p.role==='Central'&&isFront(p,rotation);
   state.coverRank=own.filter(p=>p.id!==attacker).sort((a,b)=>
-   coverScore(a,origin,rotation)-coverScore(b,origin,rotation));
+   Number(keepsShort(b))-Number(keepsShort(a))||coverScore(a,origin,rotation)-coverScore(b,origin,rotation));
  }
  const rank=state.coverRank;
  const sign=localHit.z>0?-1:1;
@@ -222,31 +224,47 @@ export function receptionBonus(p,plan,q){
  return (plan.passers?.includes(p)?-.6:0)-(defensiveSkill[p.role]??.4)*.48+Math.min(1.3,Math.abs(q.z-lane)*.14);
 }
 
-export function selectSetPlay(game,setter){
+export function selectSetPlay(game,setter,random=Math.random){
  const team=setter.team, rotation=game.rules.rotation[team], speed=botSpeed(game);
  const ideal=settingZone(team), b=game.ball;
  const quality=clamp(1-dist(b,ideal)*.14-Math.max(0,1.8-b.y)*.4,0,1);
  const first=game.firstAttackTeam===team;
- const previous=game.teamTactics[team].previousHitter;
+ const history=game.recentSetTargets[team];
  const enemy=game.players.filter(p=>p.team!==team);
- const attack=game.players.filter(p=>p.team===team&&p.id!==setter.id).flatMap(player=>{
-  const option=attackOption(player,rotation,first,quality);
-  if(!option)return [];
+ const blockers=enemy.filter(p=>isFront(p,game.rules.rotation[p.team])&&Math.abs(p.x)<3.1);
+ const timeToSpare=(player,option)=>{
   const approach=approachFor(player,option,option.time);
-  const distance=dist(player,option.spot);
-  const travel=(distance*.7+dist(player,approach)*.3)/speed;
-  const available=option.time-travel;
-  const screen=enemy.filter(p=>isFront(p,game.rules.rotation[p.team])&&Math.abs(p.x)<3.1)
-   .reduce((total,p)=>total+Math.max(0,1-Math.abs(p.z-option.spot.z)/1.8),0);
-  const bonus=option.kind.includes('Rápida')?.28:option.back?-.34:0;
-  const score=Math.min(.54,available)*1.6-screen*.48+bonus-(player.id===previous?.21:0)-(quality<.4&&option.back?.14:0);
+  const travel=(dist(player,option.spot)*.7+dist(player,approach)*.3)/speed;
+  return option.time-travel;
+ };
+ const attack=game.players.filter(p=>p.team===team&&p.id!==setter.id).flatMap(player=>{
+  let option=attackOption(player,rotation,first,quality);
+  if(!option)return [];
+  let available=timeToSpare(player,option);
+  if(!option.back&&option.time<1.5&&available<.2){
+   option=attackOption(player,rotation,first,Math.min(quality,.6));
+   available=timeToSpare(player,option);
+  }
+  if(available<-.15)return [];
+  const screen=blockers.reduce((total,p)=>total+Math.max(0,1-Math.abs(p.z-option.spot.z)/1.8),0);
+  const bonus=option.kind.includes('Rápida')?.28:option.back?(quality>.5?-.1:-.27):0;
+  const frequent=history.filter(id=>id===player.id).length*.26;
+  const repeat=history.at(-1)===player.id?.38:0;
+  const score=Math.min(.54,available)*1.6-screen*.48+bonus-frequent-repeat;
   return [{...option,player,available,score}];
  }).sort((a,b)=>b.score-a.score);
+ const best=attack[0];
  const tip=orient(team,1.75,-1.75);
  const safe=enemy.every(p=>dist(p,tip)>2.05);
  if(setter.role==='Levantador'&&isFront(setter,rotation)&&quality>.66&&b.y>2.55&&safe&&
-  (attack[0]?.available??0)<.5)return {kind:'Bola de segunda',tip};
- const best=attack[0];
- if(!best||best.available<-.15)return {kind:'Bola de segurança',safe:orient(team,6.4,0)};
- return best;
+  (best?.available??0)<.5)return {kind:'Bola de segunda',tip};
+ if(!best)return {kind:'Bola de segurança',safe:orient(team,6.4,0)};
+ // Draw from reachable options, with quality and recent use affecting the odds.
+ const weights=attack.map(option=>Math.exp((option.score-best.score)*1.7));
+ let draw=random()*weights.reduce((sum,weight)=>sum+weight,0);
+ for(const [i,option] of attack.entries()){
+  draw-=weights[i];
+  if(draw<0)return option;
+ }
+ return attack.at(-1);
 }

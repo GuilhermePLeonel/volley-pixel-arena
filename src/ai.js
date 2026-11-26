@@ -29,16 +29,19 @@ function interceptorChoices(own,path,team,rules,speed,serveReceive=false,plan=nu
  for(const p of own){
   if(p.id===rules.last||(serveReceive&&p.role==='Levantador'&&!isFront(p,rules.rotation[team])))continue;
   const rotation=rules.rotation[team],front=isFront(p,rotation);
+  const middleDefender=touches===0&&p.role==='Central';
   let best=null;
   for(const q of candidates){
    if(touches===2&&!front&&Math.abs(q.x)<3.05&&q.y>2.55)continue;
    if(touches!==2&&q.y>2.77)continue;
+   const deep=Math.abs(q.x)>4.25;
+   if(middleDefender&&front&&deep)continue;
    const distance=dist(p,q);
    const travel=Math.max(0,distance-.67)/speed;
    const ready=Math.max(travel,(p.cool??0)-.07);
    const reachable=ready<=q.t+.11;
    const settingPenalty=touches===1?(p.role==='Levantador'?-.9:p.role==='Líbero'?-.24:.22):0;
-   const defensePenalty=touches===0?(p.role==='Levantador'?1.4:p.role==='Líbero'?-.36:0):0;
+   const defensePenalty=touches===0?(p.role==='Levantador'?1.4:p.role==='Líbero'?-.36:middleDefender&&deep?1.3:0):0;
    const servePenalty=serveReceive&&plan?receptionBonus(p,plan,q):0;
    const contactHeight=touches===2?.53*Math.abs(q.y-2.65):.16*Math.abs(q.y-1.8);
    const score=Math.max(0,ready-q.t)*4.8+q.t*.36+travel*.29+settingPenalty+defensePenalty+servePenalty+contactHeight;
@@ -47,8 +50,8 @@ function interceptorChoices(own,path,team,rules,speed,serveReceive=false,plan=nu
   }
   if(best)choices.push(best);
  }
- const backAvailable=touches===0&&!serveReceive&&choices.some(c=>Math.abs(c.player.x)>=4&&c.reachable);
- if(backAvailable)for(const c of choices)if(Math.abs(c.player.x)<4)c.score+=1.4;
+ const backAvailable=touches===0&&!serveReceive&&choices.some(c=>c.player.role!=='Central'&&Math.abs(c.player.x)>=4&&c.reachable);
+ if(backAvailable)for(const c of choices)if(c.player.role==='Central'||Math.abs(c.player.x)<4)c.score+=1.4;
  return choices.sort((a,b)=>Number(b.reachable)-Number(a.reachable)||a.score-b.score);
 }
 export function chooseInterceptor(own,path,team,rules,speed,serveReceive=false){

@@ -163,15 +163,52 @@ test('planos do levantador variam por qualidade do passe, disponibilidade e bloq
  }
  for(const p of team(g,1)){p.x=6;p.z=-4;}
  Object.assign(g.ball,{...settingZone(0),y:2.25});
- const quick=selectSetPlay(g,setter);
+ const quick=selectSetPlay(g,setter,()=>0);
  assert.equal(quick.kind,'Rápida de meio');
  Object.assign(g.ball,{x:-5.8,y:1.65,z:-3.7});
- const wide=selectSetPlay(g,setter);
+ const wide=selectSetPlay(g,setter,()=>0);
  assert.doesNotMatch(wide.kind,/Rápida|Chutada/);
  assert.ok(wide.time>quick.time);
  Object.assign(g.ball,{...settingZone(0),y:2.25});
  team(g,1).filter(p=>p.frontRow).forEach((p,i)=>Object.assign(p,{x:1.7,z:[-.25,0,.25][i]}));
- assert.notEqual(selectSetPlay(g,setter).player?.id,quick.player.id);
+ assert.notEqual(selectSetPlay(g,setter,()=>0).player?.id,quick.player.id);
+});
+
+test('levantador alterna atacantes disponíveis e aciona tanto pipe quanto fundo pela saída',()=>{
+ const previousRandom=Math.random;
+ let seed=3450;
+ Math.random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+ try{
+  for(const rotation of [0,3]){
+   const g=match('Oposto'),own=team(g,0),setter=own[0];
+   g.debugSetup(rotation,1);
+   g.firstAttackTeam=0;
+   const counts=new Map(),kinds=new Set();
+   for(const p of own){
+    const option=attackOption(p,rotation,true);
+    if(option){Object.assign(p,option.spot);counts.set(p.id,0);}
+   }
+   for(const p of team(g,1))Object.assign(p,{x:7,z:4});
+   Object.assign(setter,settingZone(0));
+   for(let i=0;i<100;i++){
+    Object.assign(g.ball,{x:setter.x,z:setter.z,y:2.2,live:true,targetTeam:0});
+    Object.assign(g.rules,{side:0,touches:1,last:own[4].id});
+    g.hitLock=0;
+    assert.ok(g.aiHit(setter));
+    const {playerId,tempo}=g.setTarget;
+    counts.set(playerId,counts.get(playerId)+1);
+    kinds.add(tempo);
+   }
+   assert.equal(counts.size,4);
+   assert.ok([...counts.values()].every(n=>n>=12&&n<=40),JSON.stringify([...counts]));
+   assert.ok(kinds.has('Pipe (P6)'));
+   if(rotation===3)assert.ok(kinds.has('Fundo (P1)'));
+   const history=[...g.recentSetTargets[0]];
+   assert.equal(history.length,6);
+   g.serve();
+   assert.deepEqual(g.recentSetTargets[0],history);
+  }
+ }finally{Math.random=previousRandom;}
 });
 
 test('faltas de recepção, fundo e líbero respeitam fase e lado do contato',()=>{

@@ -23,6 +23,23 @@ test('atleta perto da rede cobre bola curta quando fundo não alcança',()=>{
  assert.equal(chooseInterceptor([front,back],path,0,rules,3.7).player.id,front.id);
 });
 
+test('central de rede cobre bolas curtas e os especialistas assumem a defesa profunda',()=>{
+ for(const team of [0,1]){
+  const own=makePlayers().filter(p=>p.team===team);
+  const sign=team?1:-1, front=own[1], back=own[4], outside=own[5];
+  const rules={side:1-team,touches:3,last:null,rotation:[0,0]};
+  Object.assign(front,{x:sign*3,z:0});
+  Object.assign(back,{x:sign*6,z:0});
+  Object.assign(outside,{x:sign*6,z:1.3});
+  const deep=[{x:sign*6.6,y:1.5,z:0,t:.88}];
+  const short=[{x:sign*3.05,y:1.4,z:0,t:.15}];
+  assert.equal(chooseInterceptor([front],deep,team,rules,4.35),null);
+  assert.equal(chooseInterceptor([front,back,outside],deep,team,rules,4.35).player,outside);
+  assert.equal(chooseInterceptor([front,back],short,team,rules,4.35).player,front);
+  assert.equal(chooseInterceptor([back],deep,team,rules,4.35).player,back);
+ }
+});
+
 test('ataques de bots miram principalmente no fundo das duas quadras',()=>{
  let seed=12345,random=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
  for(const team of [0,1]){

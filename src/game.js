@@ -13,7 +13,7 @@ export class Game{
   for(const player of this.players){
    if(player.team===1)player.baseAthleteId=this.rivalRoster.lineup[player.index];
   }
-  this.controlled=options.role==='Líbero'?this.players[4]:this.players.find(p=>p.team===0&&p.athleteId===options.athlete)||this.players.find(p=>p.team===0&&p.role===options.role)||this.players[2];this.liberoOff=false;this.ball={x:0,y:1,z:0,vx:0,vy:0,vz:0,live:false};this.aim={x:5,z:0};this.keys={};this.touchMove={x:0,y:0};this.charge=null;this.difficulty=options.difficulty;this.paused=false;this.timer=1.5;this.message='Prepare-se para o saque';this.training=options.training;this.lastHit='';this.hitLock=0;this.clock=0;this.debugTactics=false;this.serve();}
+  this.controlled=options.role==='Líbero'?this.players[4]:this.players.find(p=>p.team===0&&p.athleteId===options.athlete)||this.players.find(p=>p.team===0&&p.role===options.role)||this.players[2];this.liberoOff=false;this.ball={x:0,y:1,z:0,vx:0,vy:0,vz:0,live:false};this.aim={x:5,z:0};this.keys={};this.touchMove={x:0,y:0};this.charge=null;this.difficulty=options.difficulty;this.paused=false;this.timer=1.5;this.message='Prepare-se para o saque';this.training=options.training;this.lastHit='';this.hitLock=0;this.clock=0;this.recentSetTargets=[[],[]];this.debugTactics=false;this.serve();}
  applyLibero(){
   const players=this.players;
   this.liberoOff=false;
@@ -143,7 +143,11 @@ export class Game{
     destination.y=setPlan.height;
     shot.duration=setPlan.time;
    }
-   if(receiver&&setPlan)this.teamTactics[p.team].previousHitter=receiver.id;
+   if(receiver&&setPlan){
+    const history=this.recentSetTargets[p.team];
+    history.push(receiver.id);
+    if(history.length>6)history.shift();
+   }
    if(receiver)this.setTarget={team:p.team,playerId:receiver.id,x:destination.x,z:destination.z,
     tempo:setPlan?.kind,back:!isFront(receiver,rotation),time:this.clock+shot.duration};
   }

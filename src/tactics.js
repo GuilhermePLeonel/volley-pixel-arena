@@ -93,14 +93,14 @@ export function attackOption(p,rotation,firstAttack,passQuality=1){
  if(!front){
   const pipe=p.role==='Ponteiro';
   const [depth,pipeLane,rightLane]=rotations[rotation].backAttack;
-  return {kind:pipe?'Pipe (P6)':'Fundo (P1)',spot:orient(p.team,depth,pipe?pipeLane:rightLane),height:1.7,time:1.25,back:true};
+  return {kind:pipe?'Pipe (P6)':'Fundo (P1)',spot:orient(p.team,depth,pipe?pipeLane:rightLane),height:1.74,time:1.43,back:true};
  }
  if(p.role==='Central'&&passQuality>.65){
   const behind=zone===2&&rotation>=3;
   return {kind:behind?'Bola atrás':'Rápida de meio',spot:orient(p.team,depth+.25,behind?2.05:clamp(lane,-.65,.65)),height:1.8,time:1.02};
  }
  const fast=passQuality>.78&&p.role==='Ponteiro';
- return {kind:fast?(lane<0?'Chutada na entrada':'Chutada na saída'):lane<0?'Alta na entrada':'Alta na saída',
+ return {kind:fast?(lane<0?'Chutada na entrada':'Chutada na saída'):p.role==='Central'?'Alta no meio':lane<0?'Alta na entrada':'Alta na saída',
   spot:orient(p.team,depth+.19,lane),height:1.72,time:fast?1.22:1.64};
 }
 

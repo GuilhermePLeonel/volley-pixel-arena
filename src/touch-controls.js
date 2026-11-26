@@ -21,7 +21,7 @@ export function installTouchControls({stick,knob,attack,aimKnob,chargeFill,charg
  function setPower(power){
   power=Math.max(0,Math.min(1,power));
   chargeFill.style.transform=`translate(-50%,-50%) scale(${.3+power*.7})`;
-  chargeFill.style.background=power>=1?'#fff2a3':power>=.7?'#ffac4e':'#dfff69';
+  chargeFill.style.background=power>=1?'var(--power-max)':power>=.7?'var(--power-strong)':'var(--accent)';
   chargeValue.textContent=`${Math.round(power*100)}%`;
  }
  function moveStick(e){
