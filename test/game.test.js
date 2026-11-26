@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {Rules} from '../src/rules.js';
+import {launch,stepBall} from '../src/physics.js';
+import {Game} from '../src/game.js';
+test('trajetória alcança o alvo sob gravidade',()=>{let b={x:0,y:2,z:0};launch(b,{x:5,y:.3,z:2},1);for(let i=0;i<1000;i++)stepBall(b,.001);assert.ok(Math.abs(b.x-5)<.01);assert.ok(Math.abs(b.y-.3)<.01);assert.ok(Math.abs(b.z-2)<.01)});
+test('toques consecutivos e quarto toque são infrações',()=>{let r=new Rules();assert.equal(r.contact(0,1),null);assert.equal(r.contact(0,1),'Dois toques consecutivos');assert.equal(r.contact(0,2),null);assert.equal(r.contact(0,3),null);assert.equal(r.contact(0,4),'Quatro toques');assert.equal(r.contact(1,7),null);assert.equal(r.touches,1)});
+test('rally point, rotação e diferença de dois no set rápido',()=>{let r=new Rules();r.point(1);assert.equal(r.rotation[1],1);r.points=[6,6];r.point(0);assert.equal(r.over,false);r.point(0);assert.equal(r.over,true);assert.equal(r.sets[0],1)});
+test('simulação produz pontos e continua entre rallies',()=>{let g=new Game({role:'Ponteiro',difficulty:'Normal',quick:false,training:false},()=>{});let changes=0,last=0;for(let i=0;i<60*100;i++){g.update(1/60);let n=g.rules.points[0]+g.rules.points[1];if(n!==last){changes++;last=n}}assert.ok(changes>=2,`pontos observados: ${changes}`)});
+test('todas as posições podem ser selecionadas e saltar ou mergulhar',()=>{for(const role of ['Ponteiro','Levantador','Oposto','Central','Líbero']){let g=new Game({role,difficulty:'Normal',quick:true,training:false},()=>{});assert.equal(g.controlled.role,role);g.special();g.update(1/60);assert.ok(g.controlled.y>0,role)}});

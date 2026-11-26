@@ -1,0 +1,9 @@
+import {clamp,dist,trajectory} from './physics.js';
+export const roles=['Levantador','Oposto','Ponteiro','Central','Ponteiro','Central'];
+export const slots=[[-7,2.8],[-3,2.8],[-3,0],[-3,-2.8],[-7,-2.8],[-7,0]];
+export function makePlayers(){return [0,1].flatMap(team=>roles.map((role,i)=>({id:team*6+i,team,role,index:i,x:(team? -1:1)*slots[i][0],z:slots[i][1],y:0,vy:0,anim:0,facing:0,action:'idle',cool:0})))}
+export function formation(p,rotation){const s=slots[(p.index+rotation)%6];return {x:(p.team?-1:1)*s[0],z:p.team?-s[1]:s[1]};}
+export function updateAI(game,dt){const {players,ball,rules}=game;const path=trajectory(ball);for(const team of [0,1]){const own=players.filter(p=>p.team===team);const candidates=path.filter(q=>(team===0?q.x<-.2:q.x>.2)&&q.y<2.8&&q.y>.45);const target=candidates[0];let chosen=null;if(target){const eligible=own.filter(p=>p.id!==rules.last);eligible.sort((a,b)=>dist(a,target)-dist(b,target)+(a.role==='Levantador'&&rules.touches===1?-3:0)-(b.role==='Levantador'&&rules.touches===1?-3:0));chosen=eligible[0]}
+ for(const p of own){if(p===game.controlled)continue;let dest=formation(p,rules.rotation[team]);if(chosen===p&&target)dest=target;else if(rules.side===team&&rules.touches===1&&p.role==='Levantador')dest={x:team?1.8:-1.8,z:0};else if(rules.side===team&&rules.touches===2&&p.role!=='Levantador'&&p.index%2===0)dest={x:team?2.2:-2.2,z:dest.z};const dx=dest.x-p.x,dz=dest.z-p.z,d=Math.hypot(dx,dz);let speed=game.difficulty==='Fácil'?3.5:game.difficulty==='Difícil'?5.3:4.4;if(d>.12){p.x+=dx/d*Math.min(d,speed*dt);p.z+=dz/d*Math.min(d,speed*dt);p.facing=Math.atan2(dz,dx);p.anim+=dt*speed;p.action='run'}else p.action='idle';
+ if(p.cool<=0&&ball.live&&dist(p,ball)<1.15&&ball.y<2.8&&ball.y>.45&&rules.last!==p.id){let can=rules.side!==team||rules.touches<3;if(can){game.aiHit(p);p.cool=.5}}
+ }} }
