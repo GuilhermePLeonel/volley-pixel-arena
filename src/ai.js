@@ -1,11 +1,18 @@
 import {clamp,dist,trajectory} from './physics.js';
-// Opposite pairs are three places apart in the service order.
+import {isFront,officialZone,receptionFormation,preferredPosition} from './tactics.js';
+import {botSpeed,createTeamPlan,receptionBonus} from './tactical-play.js';
+export {attackSpot,isFront,receptionFormation,rotationSlot,serverIndex} from './tactics.js';
 export const roles=['Levantador','Central','Ponteiro','Oposto','Central','Ponteiro'];
-// Service order: positions 1, 2, 3, 4, 5, 6, viewed from team 0.
-export const slots=[[-7,2.8],[-3,2.8],[-3,0],[-3,-2.8],[-7,-2.8],[-7,0]];
-export const rotationSlot=(p,rotation)=>(p.index-rotation+6)%6;
-export const serverIndex=rotation=>rotation%6;
-export const isFront=(p,rotation)=>{const n=rotationSlot(p,rotation);return n>=1&&n<=3};
+export const tacticalFormation=preferredPosition;
+export const serveReceiveFormation=receptionFormation;
+
+export function makePlayers(){
+ return [0,1].flatMap(team=>roles.map((role,index)=>{
+  const p={id:team*6+index,team,role,baseRole:role,index,y:0,vy:0,anim:0,facing:0,action:'idle',cool:0};
+  return {...p,...receptionFormation(p,0)};
+ }));
+}
+
 export function chooseAIAttackTarget(team,difficulty,random=Math.random){
  const error=difficulty==='Fácil'?1.7:difficulty==='Difícil'?.35:.85;
  const deep=random()<.85;
@@ -15,67 +22,55 @@ export function chooseAIAttackTarget(team,difficulty,random=Math.random){
  if(random()<miss)z=(random()<.5?-1:1)*(4.7+random()*.9);
  return {x,z};
 }
-const orient=(team,x,z)=>({x:team?-x:x,z:team?-z:z});
-export function formation(p,rotation){const s=slots[rotationSlot(p,rotation)];return orient(p.team,s[0],s[1]);}
-export function receptionFormation(p,rotation){let spot=formation(p,rotation);if(p.role==='Levantador'&&!isFront(p,rotation))spot.x=p.team?4.6:-4.6;return spot;}
-export function tacticalFormation(p,rotation,phase='transition',ballZ=0){
- const front=isFront(p,rotation);let x,z;
- if(p.role==='Levantador'){x=-1.85;z=1.9}
- else if(front){x=-2.1;z=p.role==='Central'?0:p.role==='Oposto'?3:-3;if(phase==='defense'&&p.role==='Central')z=clamp((p.team?-ballZ:ballZ)*.35,-1.1,1.1)}
- else {let setterSlot=(6-rotation)%6,setterBack=setterSlot===0||setterSlot>=4;x=p.role==='Central'||p.role==='Líbero'?-6.8:-6.5;z=p.role==='Líbero'?(setterBack?2:0):p.role==='Central'?0:p.role==='Oposto'?2.9:-2.8}
- return orient(p.team,x,z);
-}
-// The reception shape is entered only after the opponent's service hit.
-export function serveReceiveFormation(p,rotation){
- let front=isFront(p,rotation),x,z;
- if(p.role==='Levantador'){x=front?-2.5:-7.1;z=front?2:2.2}
- else if(p.role==='Ponteiro'){x=front?-5.3:-6.7;z=front?-3:-2.4}
- else if(p.role==='Líbero'){x=-6;z=1}
- else if(front){x=-2;z=p.role==='Central'?0:3}
- else {x=-7;z=p.role==='Central'?2.8:0}
- return orient(p.team,x,z);
-}export function attackSpot(p,rotation){let spot=tacticalFormation(p,rotation,'offense');if(!isFront(p,rotation))spot.x=p.team?4.3:-4.3;return spot}export function makePlayers(){return [0,1].flatMap(team=>roles.map((role,index)=>{let p={id:team*6+index,team,role,baseRole:role,index,y:0,vy:0,anim:0,facing:0,action:'idle',cool:0};return {...p,...formation(p,0)}}))}
-function interceptorChoices(own,path,team,rules,speed,serveReceive=false){
- const candidates=path.filter(q=>(team===0?q.x<-.25:q.x>.25)&&q.y<2.85&&q.y>.45);
- const defending=rules.side!==team,choices=[];
+function interceptorChoices(own,path,team,rules,speed,serveReceive=false,plan=null){
+ const touches=rules.side===team?rules.touches:0;
+ const candidates=path.filter(q=>(team===0?q.x<-.24:q.x>.24)&&q.y<3.15&&q.y>.42);
+ const choices=[];
  for(const p of own){
   if(p.id===rules.last||(serveReceive&&p.role==='Levantador'&&!isFront(p,rules.rotation[team])))continue;
-  let best=null,reachable=false;
+  const rotation=rules.rotation[team],front=isFront(p,rotation);
+  let best=null;
   for(const q of candidates){
-   if(rules.side===team&&rules.touches===2&&!isFront(p,rules.rotation[team])&&Math.abs(q.x)<3&&q.y>2.55)continue;
-   let travel=Math.max(0,dist(p,q)-.7)/speed;
-   let penalty=rules.side===team&&rules.touches===1&&p.role!=='Levantador'?.8:defending&&p.role==='Levantador'?2.2:0;
-   let score=Math.max(0,travel-q.t)*3+q.t*.3+travel*.25+penalty;
-   if(travel<=q.t+.08)reachable=true;
-   if(!best||score<best.score)best={player:p,target:q,score};
+   if(touches===2&&!front&&Math.abs(q.x)<3.05&&q.y>2.55)continue;
+   if(touches!==2&&q.y>2.77)continue;
+   const distance=dist(p,q);
+   const travel=Math.max(0,distance-.67)/speed;
+   const ready=Math.max(travel,(p.cool??0)-.07);
+   const reachable=ready<=q.t+.11;
+   const settingPenalty=touches===1?(p.role==='Levantador'?-.9:p.role==='Líbero'?-.24:.22):0;
+   const defensePenalty=touches===0?(p.role==='Levantador'?1.4:p.role==='Líbero'?-.36:0):0;
+   const servePenalty=serveReceive&&plan?receptionBonus(p,plan,q):0;
+   const contactHeight=touches===2?.53*Math.abs(q.y-2.65):.16*Math.abs(q.y-1.8);
+   const score=Math.max(0,ready-q.t)*4.8+q.t*.36+travel*.29+settingPenalty+defensePenalty+servePenalty+contactHeight;
+   if(!best||Number(reachable)>Number(best.reachable)||(reachable===best.reachable&&score<best.score))
+    best={player:p,target:q,score,reachable};
   }
-  if(best)choices.push({...best,reachable});
+  if(best)choices.push(best);
  }
- // Prefer defenders actually covering the back court only if one can reach
- // the trajectory; close balls still belong to whoever can save them.
- const backAvailable=defending&&choices.some(c=>Math.abs(c.player.x)>=4&&c.reachable);
+ const backAvailable=touches===0&&!serveReceive&&choices.some(c=>Math.abs(c.player.x)>=4&&c.reachable);
  if(backAvailable)for(const c of choices)if(Math.abs(c.player.x)<4)c.score+=1.4;
- return choices.sort((a,b)=>a.score-b.score);
+ return choices.sort((a,b)=>Number(b.reachable)-Number(a.reachable)||a.score-b.score);
 }
 export function chooseInterceptor(own,path,team,rules,speed,serveReceive=false){
  return interceptorChoices(own,path,team,rules,speed,serveReceive)[0]||null;
 }
-// Keep an interceptor long enough to avoid rapid back-and-forth changes.
-export function coordinateInterceptor(state,eligible,path,team,rules,speed,serveReceive,assigned,active,dt){
+
+export function coordinateInterceptor(state,eligible,path,team,rules,speed,serveReceive,assigned,active,dt,plan=null){
  const context=[active,rules.side,rules.touches,rules.last,serveReceive,assigned].join(':');
  if(state.context!==context){state.context=context;state.selection=null;state.timer=0}
  if(!active||!eligible.length){state.selection=null;state.timer=0;return null}
  state.timer-=dt;
  if(state.timer<=0){
-  let choices=interceptorChoices(eligible,path,team,rules,speed,serveReceive);
-  let best=choices[0],current=state.selection&&choices.find(c=>c.player.id===state.selection.player.id);
-  // A challenger must be meaningfully better before changing the assignment.
-  state.selection=current&&best&&current.score<=best.score+.8?current:best;
+  const choices=interceptorChoices(eligible,path,team,rules,speed,serveReceive,plan);
+  const best=choices[0],current=state.selection&&choices.find(c=>c.player.id===state.selection.player.id);
+  const hold=current&&best&&(!best.reachable||current.reachable)&&current.score<=best.score+.52;
+  state.selection=hold?current:best;
   if(state.selection)state.selection={...state.selection,target:{...state.selection.target}};
-  state.timer=.18;
+  state.timer=.14;
  }else if(state.selection){state.selection.target.t=Math.max(0,state.selection.target.t-dt)}
  return state.selection;
 }
+
 function moveSmoothly(p,dest,speed,dt){
  if(p.navX===undefined){p.navX=p.x;p.navZ=p.z;p.moveVX=0;p.moveVZ=0;p.moving=false}
  let follow=1-Math.exp(-7*dt);p.navX+=(dest.x-p.navX)*follow;p.navZ+=(dest.z-p.navZ)*follow;
@@ -87,21 +82,90 @@ function moveSmoothly(p,dest,speed,dt){
  let velocity=Math.hypot(p.moveVX,p.moveVZ);p.moving=p.moving?velocity>.24:velocity>.45;
  if(p.moving){let wanted=Math.atan2(p.moveVZ,p.moveVX),delta=Math.atan2(Math.sin(wanted-p.facing),Math.cos(wanted-p.facing));p.facing+=delta*(1-Math.exp(-7*dt));p.anim+=dt*velocity;p.action='run'}else p.action='idle';
 }
+function avoidTeammates(player,target,own,urgent){
+ const dx=target.x-player.x,dz=target.z-player.z,d=Math.hypot(dx,dz);
+ if(d<.23)return target;
+ let sideStep=0;
+ for(const mate of own){
+  if(mate===player)continue;
+  const mx=mate.x-player.x,mz=mate.z-player.z;
+  const ahead=(mx*dx+mz*dz)/d,lateral=(mz*dx-mx*dz)/d;
+  if(ahead<-.15||ahead>Math.min(1.7,d)||Math.abs(lateral)>.68)continue;
+  const side=Math.abs(lateral)>.24?Math.sign(lateral):player.id<mate.id?1:-1;
+  sideStep-=side*(.68-Math.abs(lateral))*(1-Math.max(0,ahead)/1.85);
+ }
+ sideStep=clamp(sideStep,-.7,.7)*(urgent?.45:1);
+ return {x:clamp(target.x-dz/d*sideStep,player.team?.43:-10.4,player.team?10.4:-.43),
+  z:clamp(target.z+dx/d*sideStep,-5.45,5.45)};
+}
+
 export function updateAI(game,dt){
- const {players,ball,rules}=game,path=trajectory(ball);game.aiCoord||=[{},{}];
+ const {players,ball,rules}=game;
+ const path=trajectory(ball,2.6,.045);
+ if(game.debugTactics)game.prediction=path;
  for(const team of [0,1]){
-  const own=players.filter(p=>p.team===team),speed=game.difficulty==='Fácil'?3.05:game.difficulty==='Difícil'?4.4:3.7;
+  const own=players.slice(team*6,team*6+6),speed=botSpeed(game),rotation=rules.rotation[team];
+  const state=game.teamTactics[team];
+  const plan=createTeamPlan(game,own,path,speed);
   const assigned=game.setTarget?.team===team&&rules.side===team&&rules.touches===2?game.setTarget.playerId:null;
-  const eligible=assigned===null?own:own.filter(p=>p.id===assigned);
-  const selection=coordinateInterceptor(game.aiCoord[team],eligible,path,team,rules,speed,game.serveFlight,assigned,ball.targetTeam===team,dt),chosen=selection?.player;
+  const human=own.find(p=>p===game.controlled&&!game.liberoOff);
+  const touches=rules.side===team?rules.touches:0;
+  const humanReady=!!human&&!game.charge&&touches<2&&path.some((q,i)=>
+   i>0&&q.t<=.3&&q.y<path[i-1].y&&q.y<2.55&&q.y>.5&&dist(human,q)<.6);
+  const eligible=own.filter(p=>assigned!==null?p.id===assigned:p!==human||humanReady);
+  const flight=game.flight;
+  const fromOpponent=flight&&flight.team!==team;
+  const reaction=game.difficulty==='Fácil'?.23:game.difficulty==='Difícil'?.12:.18;
+  const waiting=fromOpponent&&flight.kind==='attack'&&game.clock-flight.started<reaction;
+  const outside=fromOpponent&&['attack','serve','free','tip'].includes(flight.kind)&&
+   (Math.abs(flight.target.x)>9.35||Math.abs(flight.target.z)>4.82);
+  const active=ball.targetTeam===team&&!waiting&&!outside;
+  const selection=coordinateInterceptor(state,eligible,path,team,rules,speed,plan.phase==='Recepção',assigned,active,dt,plan);
+  const chosen=selection?.player;
+  state.phase=plan.phase;
+  state.next=chosen?.id??null;
+  state.regions=plan.regions;
+  state.blockers=plan.blockers.map(p=>p.id);
+  state.settingGoal=plan.settingGoal;
   for(const p of own){
-   if(p===game.controlled&&!game.liberoOff)continue;
-   let phase=rules.side===team?'offense':'defense',receiving=game.serveFlight&&ball.targetTeam===team;
-   let dest=receiving?serveReceiveFormation(p,rules.rotation[team]):tacticalFormation(p,rules.rotation[team],phase,ball.z);
-   if(chosen===p&&!(receiving&&p.role==='Levantador'))dest=selection.target;
-   if(chosen===p&&rules.side===team&&rules.touches===2&&isFront(p,rules.rotation[team])&&p.y===0&&p.vy===0&&selection.target.t<.38&&dist(p,selection.target)<1.5){p.vy=8.3;p.takeoffX=p.x;p.actionPose='attack';p.actionTime=.5}
-   moveSmoothly(p,dest,speed,dt);
-   if(chosen===p&&p.cool<=0&&ball.live&&(team===0?ball.x<=0:ball.x>=0)&&dist(p,ball)<.9&&ball.y<2.8&&ball.y>.45&&rules.last!==p.id){if(rules.side!==team||rules.touches<3){game.aiHit(p);p.cool=.5}}
+   const job=plan.jobs.get(p.id);
+   const responsible=chosen===p;
+   const target=selection?.target;
+   const front=isFront(p,rotation);
+   const keepingApproach=responsible&&assigned!==null&&target.t>.47&&Math.abs(target.x)<3;
+   const entering=responsible&&touches===1&&p.role==='Levantador'&&target.t>.45&&job?.responsibility==='Organizar o segundo toque';
+   let dest=(responsible&&!keepingApproach&&!entering)?target:job?.target??p;
+   if(responsible&&touches===2&&!front&&p.y===0&&Math.abs(dest.x)<3.25&&target.y>2.35){
+    dest={x:p.team?3.25:-3.25,z:dest.z};
+   }
+   p.officialZone=officialZone(p,rotation);
+   p.frontRow=front;
+   p.phase=plan.phase;
+   p.responsibility=responsible?(touches===0?(plan.phase==='Recepção'?'Passador principal':'Defensor principal'):
+    touches===1?(rules.last===own[0].id?'Levantador de apoio':'Segundo toque'):'Atacante acionado'):job?.responsibility??'Reorganizar';
+   p.contactPriority=responsible?4:job?.priority??0;
+   p.tacticalTarget=job?.target??{x:p.x,z:p.z};
+   p.moveTarget={x:dest.x,z:dest.z};
+   if(p===human)continue;
+   const attack=responsible&&touches===2&&target.t<.32&&target.y>2.32&&dist(p,target)<1.45;
+   const block=job?.jump==='block'&&!responsible&&game.hitLock<.5;
+   if((block||(attack&&(front||Math.abs(p.x)>=3.08)))&&p.y===0&&p.vy===0&&p.jumpRecovery<=0){
+    p.vy=block?6.35:7.25;p.takeoffX=p.x;
+    p.actionPose=block?'block':'attack';p.actionTime=.55;p.jumpRecovery=.72;
+   }
+   const pace=p.y>.1?speed*.86:speed;
+   moveSmoothly(p,avoidTeammates(p,dest,own,responsible||block),pace,dt);
+  }
+  if(chosen&&chosen!==human&&chosen.cool<=0&&ball.live&&(team===0?ball.x<=0:ball.x>=0)&&
+    dist(chosen,ball)<(ball.y<.93&&touches===0?1.12:.9)&&ball.y<(touches===2?3.2:2.75)+chosen.y*.22&&ball.y>.43&&rules.last!==chosen.id){
+   const closeToGround=ball.y<1.14;
+   const descending=ball.vy<0;
+   const emergency=closeToGround&&selection.target.t<.24;
+   const atAttackHeight=touches===2&&ball.y>2.36&&selection.target.t<.28;
+   if((descending&&(touches<2||selection.target.t<.24))||emergency||atAttackHeight){
+    const dive=touches===0&&ball.y<.95&&dist(chosen,ball)>.72;
+    if(game.aiHit(chosen)&&dive){chosen.actionPose='dive';chosen.actionTime=.55;}
+   }
   }
  }
 }

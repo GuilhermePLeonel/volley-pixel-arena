@@ -67,3 +67,44 @@ body:has(.menu.hidden) .score{top:8px}body:has(.menu.hidden) .match-meta{top:aut
  }
  .score .team{gap:4px}
 }
+
+.tactics-debug,.tactics-open {
+ position:fixed;
+ z-index:12;
+ right:12px;
+ top:64px;
+ color:#f4f1e9;
+ border:1px solid #6f7775;
+ background:#151a1eee;
+ font:12px/1.5 monospace;
+}
+.tactics-debug {
+ width:min(405px,calc(100vw - 24px));
+ max-height:58vh;
+ overflow:auto;
+ padding:10px;
+}
+.tactics-debug button,.tactics-debug select,.tactics-open {
+ font:inherit;
+ color:inherit;
+ background:#252b32;
+ border:1px solid #738185;
+ padding:4px 7px;
+}
+.tactics-heading,.tactics-controls {
+ display:flex;
+ align-items:center;
+ gap:8px;
+ margin-bottom:7px;
+}
+.tactics-heading { justify-content:space-between; }
+.tactics-controls label { display:flex;align-items:center;gap:5px; }
+.tactics-legend { color:#a8e4ae; }
+.tactics-debug [data-status],.tactics-players {
+ white-space:pre-wrap;
+ overflow-wrap:anywhere;
+ margin-top:6px;
+}
+@media (max-width:700px) {
+ .tactics-debug { top:112px;width:min(330px,calc(100vw - 24px));max-height:42vh; }
+}
