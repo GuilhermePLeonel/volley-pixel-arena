@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Game} from '../src/game.js';
+
+test('partida com elenco genérico ignora atleta do menu e Finanças pode jogar do outro lado',()=>{
+ const game=new Game({role:'Central',athlete:'leonel',homeTeam:'humanas',rivalTeam:'financas',quick:true},()=>{});
+ assert.deepEqual(game.teams.map(team=>team.id),['humanas','financas']);
+ assert.equal(game.controlled.role,'Central');
+ assert.equal(game.playerName(game.controlled),undefined);
+ assert.equal(game.playerName(game.players[8]),'Leonel');
+ const rivalLibero=game.players.find(player=>player.team===1&&player.role==='Líbero');
+ assert.equal(game.playerName(rivalLibero),'Betinho');
+});
 import {athletes,athletesForRole,coach} from '../src/roster.js';
 import {transformSpritePixels} from '../src/sprite-variants.js';
 

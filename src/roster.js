@@ -15,7 +15,7 @@ export const athleteById = id => athletes.find(a=>a.id===id);
 export const athletesForRole = role => athletes.filter(a=>a.role===role);
 export const startingLineup = ['joao','thiago','leonel','gaga','ryan','gn'];
 
-export function assignAthletes(players, selectedId){
+export function assignAthletes(players, selectedId, team=0){
  const selected=athleteById(selectedId);
  const lineup=[...startingLineup];
  // Two players of the same position already have their own rotation slots.
@@ -25,7 +25,7 @@ export function assignAthletes(players, selectedId){
   if(i>=0)lineup[i]=selected.id;
  }
  for(const p of players){
-  if(p.team!==0)continue;
+  if(p.team!==team)continue;
   p.baseAthleteId=lineup[p.index];
   p.athleteId=p.baseAthleteId;
  }

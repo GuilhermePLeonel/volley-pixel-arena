@@ -44,3 +44,24 @@ body:has(.menu.hidden) .score{top:8px}body:has(.menu.hidden) .match-meta{top:aut
  .bottom-left{top:80px}.bottom-left #hint{display:none}.match-meta{top:47px!important}.game-message{top:75px!important}.power-wrap{bottom:7px}
 }
 @media(max-width:350px){.joystick{width:100px;height:100px}.joystick-knob{width:42px;height:42px}}
+.team-selectors{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:12px;
+ margin-top:18px;
+}
+.team-selectors select{padding-right:29px;text-overflow:ellipsis}
+.team-selectors+.menu-grid{margin-top:12px}
+.menu-grid.generic-roster{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (pointer:coarse), (max-width:700px), (max-height:500px) and (max-width:900px){
+ .team-selectors{gap:7px;margin-top:12px}
+ .team-selectors select{min-height:48px;margin-top:6px;font-size:16px;padding:10px 24px 10px 8px}
+}
+@media(max-width:420px){
+ body:has(.menu.hidden) .score{
+  left:calc((100% - 46px)/2);
+  gap:clamp(4px,1.8vw,9px);
+  padding-inline:8px;
+ }
+ .score .team{gap:4px}
+}

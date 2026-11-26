@@ -1,7 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {joystickVector,installTouchControls} from '../src/touch-controls.js';
+import {courtAim,joystickVector,installTouchControls} from '../src/touch-controls.js';
 import {Game} from '../src/game.js';
+
+test('mira móvel prende os dois eixos nas linhas da quadra',()=>{
+ assert.deepEqual(courtAim({x:-18,z:12}),{x:-9,z:4.5});
+ assert.deepEqual(courtAim({x:12,z:-7}),{x:9,z:-4.5});
+ assert.deepEqual(courtAim({x:-6,z:2}),{x:-6,z:2});
+});
+
+test('carga usa 70% da duração apenas no controle móvel, inclusive no saque',()=>{
+ const game=new Game({role:'Levantador',quick:true},()=>{});
+ assert.equal(game.awaitUserServe,true);
+ game.charge={mobile:true};
+ assert.equal(game.chargeTime(),525);
+ game.charge={mobile:false};
+ assert.equal(game.chargeTime(),750);
+ game.awaitUserServe=false;
+ assert.equal(game.chargeTime(),1100);
+ game.charge={mobile:true};
+ assert.equal(game.chargeTime(),770);
+});
 
 test('direcional tem zona morta, limite circular e movimento proporcional',()=>{
  assert.deepEqual(joystickVector(4,0,50),{x:0,y:0});

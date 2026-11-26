@@ -36,3 +36,41 @@ export function variantTexture(source, skin, whiteJersey){
  ctx.putImageData(image,0,0);
  return canvas;
 }
+
+export function teamUniform(source, team, {libero=false, coach=false}={}){
+ const canvas=document.createElement('canvas');
+ canvas.width=source.width;
+ canvas.height=source.height;
+ const ctx=canvas.getContext('2d',{willReadFrequently:true});
+ ctx.drawImage(source,0,0);
+ const image=ctx.getImageData(0,0,canvas.width,canvas.height);
+ const primary=hexChannels(libero?'#e9ece2':team.primary);
+ const secondary=hexChannels(libero?team.primary:team.secondary);
+ const pixels=image.data;
+ for(let i=0;i<pixels.length;i+=4){
+  if(!pixels[i+3])continue;
+  const position=i/4;
+  const x=position%canvas.width;
+  const y=Math.floor(position/canvas.width);
+  const row=Math.floor(y/80);
+  const headBottom=[27,27,30,30,35,35,30,30,27,27,23,23][row]??30;
+  const dive=row>=10&&Math.floor(x/80)>=3&&Math.floor(x/80)<=8;
+  const onUniform=coach?(x/canvas.width>.34&&x/canvas.width<.86&&y/canvas.height>.42&&y/canvas.height<.8)
+   :(y%80>headBottom&&y%80<60&&(!dive||x%80<48));
+  if(!onUniform)continue;
+  const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
+  const isFabric=coach?r>16&&r<100&&Math.max(r,g,b)-Math.min(r,g,b)<20
+   :b>42&&b<160&&b>r+7&&b>g+3;
+  const isTrim=r>115&&r>g*1.48&&g>b*1.7;
+  if(!isFabric&&!isTrim)continue;
+  const color=isFabric?primary:secondary;
+  const shade=isFabric?Math.max(.58,Math.min(1.28,(coach?r:b)/75+.25)):.68+r/650;
+  for(let channel=0;channel<3;channel++)pixels[i+channel]=color[channel]*shade;
+ }
+ ctx.putImageData(image,0,0);
+ return canvas;
+}
+
+function hexChannels(hex){
+ return hex.slice(1).match(/../g).map(channel=>parseInt(channel,16));
+}

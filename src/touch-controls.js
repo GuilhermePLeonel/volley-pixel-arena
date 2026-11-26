@@ -1,3 +1,9 @@
+import {clamp} from './physics.js';
+
+export function courtAim({x,z}){
+ return {x:clamp(x,-9,9),z:clamp(z,-4.5,4.5)};
+}
+
 // A circular dead zone keeps both analog controls still near their centres.
 export function joystickVector(dx,dy,radius,deadZone=.12){
  const distance=Math.hypot(dx,dy);
