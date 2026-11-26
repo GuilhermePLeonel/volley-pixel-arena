@@ -28,6 +28,7 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 ## Implementado
 
 - Quadra low-poly em Three.js com proporção regulamentar de 18 × 9, projeção visual mais larga e câmera em perspectiva que acompanha a bola suavemente. Rede, antenas, sombras e 12 jogadores com sprites do PDF fornecido pelo usuário.
+- Arquibancadas com torcedores animados em laranja e preto e bandeiras com o escudo fornecido pelo usuário.
 - Bola com gravidade e trajetórias balísticas, rede, antenas, piso, limite da quadra, mira no chão, indicação de alvo e arco aproximado.
 - Jogador selecionável, movimento, corrida, salto, mergulho simplificado, contatos contextuais, força e direção; sons sintéticos.
 - IA local com formação 5x1 simplificada, previsão de trajetória e um interceptador designado. Após o saque adversário, o ponteiro recua para receber e o levantador de fundo aguarda o passe antes de infiltrar; o líbero e o ponteiro de fundo cobrem zonas distintas; os três níveis ajustam movimentação e frequência de erros.
@@ -49,7 +50,7 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 
 ## Assets e licenças
 
-Os sprites dos jogadores foram extraídos de Sprites_Voleibol.pdf, fornecido pelo usuário; o PDF não informa autoria ou licença dos desenhos. As variações de uniforme foram produzidas a partir desses quadros. Geometria e efeitos sonoros são gerados pelo código deste projeto. O script scripts/extract_pdf_sprites.py reproduz a extração com pypdf e Pillow. Three.js e Vite são dependências de código aberto; suas licenças acompanham os respectivos pacotes em `node_modules`. As fontes Barlow Condensed e DM Sans são carregadas do Google Fonts e disponibilizadas sob a SIL Open Font License. A aplicação precisa de acesso à rede para carregar essas fontes, mas usa fontes de reserva caso não estejam disponíveis.
+Os sprites dos jogadores foram extraídos de Sprites_Voleibol.pdf, fornecido pelo usuário; o PDF não informa autoria ou licença dos desenhos. As variações de uniforme foram produzidas a partir desses quadros. O escudo da Atlética de Finanças UFRRJ usado nas bandeiras também foi fornecido pelo usuário. Geometria e efeitos sonoros são gerados pelo código deste projeto. O script scripts/extract_pdf_sprites.py reproduz a extração com pypdf e Pillow. Three.js e Vite são dependências de código aberto; suas licenças acompanham os respectivos pacotes em `node_modules`. As fontes Barlow Condensed e DM Sans são carregadas do Google Fonts e disponibilizadas sob a SIL Open Font License. A aplicação precisa de acesso à rede para carregar essas fontes, mas usa fontes de reserva caso não estejam disponíveis.
 
 ## Próximos passos
 
