@@ -3,7 +3,6 @@ import {Stands} from './stands.js';
 import {makeBallTexture,addRefereeStand} from './court-art.js';
 import coachCelebration from './assets/jefferson-reaction.webp';
 import originalAtlas from './assets/volley-original.png';
-import {hasNamedRoster} from './teams.js';
 import coachSprite from './assets/atletas/jefferson.webp';
 const athleteSprites=import.meta.glob('./assets/atletas/*.webp',{eager:true,query:'?url',import:'default'});
 import {teamUniform} from './sprite-variants.js';
@@ -11,6 +10,7 @@ const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.85});
 export class View{
  constructor(host,players){this.host=host;this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x111c22);this.camera=new THREE.PerspectiveCamera(38,1,.1,120);this.camera.position.set(-27,20,.01);this.camera.lookAt(0,0,0);this.cameraYaw=0;this.lastRender=performance.now();this.renderer=new THREE.WebGLRenderer({antialias:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(this.renderer.domElement);this.scene.add(new THREE.HemisphereLight(0xd9f5ff,0x574132,2));let light=new THREE.DirectionalLight(0xfff2df,2.3);light.position.set(-6,20,9);light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.camera.left=-16;light.shadow.camera.right=16;light.shadow.camera.top=16;light.shadow.camera.bottom=-16;this.scene.add(light);this.buildCourt();this.stands=new Stands(this.scene);let loader=new THREE.TextureLoader();this.atlases={original:loader.load(originalAtlas)};for(const [path,url] of Object.entries(athleteSprites)){let id=path.split('/').pop().replace('.webp','');if(id!=='jefferson')this.atlases[id]=loader.load(url)}
   this.uniforms=new Map();
+  this.rivalCoachFrames=new Map();
   this.coachIdle=this.loadSprite(loader,coachSprite);
   this.coachCheer=this.loadSprite(loader,coachCelebration);
   this.coaches=[0,1].map(side=>this.makeCoach(side));
@@ -29,13 +29,29 @@ export class View{
   texture.colorSpace=THREE.SRGBColorSpace;
   return texture;
  }
- uniformTexture(base,team,variant,settings){
-  if(!base.image)return base;
-  const key=team.id+':'+variant;
+ uniformTexture(athleteId,team,libero=false){
+  const base=this.atlases[athleteId]||this.atlases.original;
+  if(!base.image)return null;
+  const key=team.id+':'+athleteId+':'+libero;
   if(!this.uniforms.has(key)){
-   this.uniforms.set(key,this.texture(teamUniform(base.image,team,settings)));
+   const whiteBase=athleteId==='betinho'||athleteId==='fabio';
+   this.uniforms.set(key,this.texture(teamUniform(base.image,team,{libero,whiteBase})));
   }
   return this.uniforms.get(key);
+ }
+ rivalCoachFrame(athleteId,team,cheering){
+  const atlas=this.uniformTexture(athleteId,team);
+  if(!atlas)return null;
+  const key=cheering?'cheering':'standing';
+  if(!this.rivalCoachFrames.has(key)){
+   const canvas=document.createElement('canvas');
+   const size=atlas.image.width/12;
+   canvas.width=canvas.height=size;
+   const [column,row]=cheering?[7,6]:[10,8];
+   canvas.getContext('2d').drawImage(atlas.image,column*size,row*size,size,size,0,0,size,size);
+   this.rivalCoachFrames.set(key,this.texture(canvas));
+  }
+  return this.rivalCoachFrames.get(key);
  }
  makeCoach(side){
   const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:this.coachIdle,transparent:true,depthWrite:false}));
@@ -48,21 +64,26 @@ export class View{
  showCoachReaction(side){
   if(this.coaches[side])this.coaches[side].reaction=1.7;
  }
- resetCoaches(){for(const coach of this.coaches)coach.reaction=0}
- updateCoaches(teams,dt){
+ resetMatchArt(){
+  for(const coach of this.coaches)coach.reaction=0;
+  for(const textures of [this.uniforms,this.rivalCoachFrames]){
+   for(const texture of textures.values())texture.dispose();
+   textures.clear();
+  }
+ }
+ updateCoaches(game,dt){
   this.coaches.forEach((coach,side)=>{
    coach.reaction=Math.max(0,coach.reaction-dt);
    const cheering=coach.reaction>0;
-   const base=cheering?this.coachCheer:this.coachIdle;
-   const team=teams[side];
-   coach.sprite.material.map=hasNamedRoster(team)?base:
-    this.uniformTexture(base,team,cheering?'cheer':'coach',{coach:true});
+   const texture=side===0?(cheering?this.coachCheer:this.coachIdle):
+    this.rivalCoachFrame(game.rivalRoster.coach,game.teams[1],cheering);
+   coach.sprite.visible=!!texture;
+   if(texture)coach.sprite.material.map=texture;
   });
  }
  playerAtlas(player,team){
-  if(hasNamedRoster(team))return this.atlases[player.athleteId]||this.atlases.original;
-  const libero=player.role==='Líbero';
-  return this.uniformTexture(this.atlases.original,team,libero?'libero':'player',{libero});
+  if(player.team===0)return this.atlases[player.athleteId]||this.atlases.original;
+  return this.uniformTexture(player.athleteId,team,player.role==='Líbero');
  }
  showImpact(pos){this.impact.position.set(pos.x,pos.y,pos.z);this.impactTime=.42;this.impact.visible=true} box(x,y,z,w,h,d,color){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);m.receiveShadow=true;this.scene.add(m);return m}
  buildCourt(){this.box(0,-.38,0,34,.6,25,0x182c32);this.box(0,-.03,0,23,.08,14,0x2d7b80);this.box(-4.5,.02,0,9,.08,9,0xe3a26e);this.box(4.5,.02,0,9,.08,9,0xdd9566);const line=(x,z,w,d)=>this.box(x,.075,z,w,.025,d,0xf6e8d0);line(0,-4.5,18,.07);line(0,4.5,18,.07);line(-9,0,.07,9);line(9,0,.07,9);line(-3,0,.055,9);line(3,0,.055,9);line(0,0,.08,9);for(let z of [-5,5])this.box(0,1.35,z,.15,2.7,.15,0xc4d5d3);for(let z of [-4.5,4.5]){for(let i=0;i<8;i++)this.box(0,2.625+i*.125,z,.075,.125,.075,i%2?0xf9f5ea:0xe53935)}let net=new THREE.Mesh(new THREE.PlaneGeometry(9.8,1.0,20,5),new THREE.MeshBasicMaterial({color:0xd7e8e2,wireframe:true,transparent:true,opacity:.35,side:THREE.DoubleSide}));net.rotation.y=Math.PI/2;net.position.set(0,2.07,0);this.scene.add(net);this.box(0,2.57,0,.08,.08,10,0xf9f2df);for(let i=0;i<4;i++){this.box(0,.3+i*.45,-8.5-i*.55,27,.45,.8,0x253c43);this.box(0,.3+i*.45,8.5+i*.55,27,.45,.8,0x253c43)} }
@@ -70,6 +91,8 @@ export class View{
  texture(c){let t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;t.colorSpace=THREE.SRGBColorSpace;return t}
  makePlayer(p){let texture=this.atlases.original.clone();texture.repeat.set(1/12,1/12);texture.needsUpdate=true;let sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false}));sprite.center.set(.5,.1);sprite.scale.set(1.85,1.85,1);this.scene.add(sprite);let shadow=this.shadow(.33);let marker=new THREE.Mesh(new THREE.RingGeometry(.4,.46,32),new THREE.MeshBasicMaterial({color:0xe4ff68,side:THREE.DoubleSide}));marker.rotation.x=-Math.PI/2;this.scene.add(marker);return {sprite,shadow,marker,atlas:this.atlases.original}}
  updatePlayerSprite(p,m,team){let pose=p.actionTime>0?p.actionPose:(p.y>.2?'attack':p.action==='run'?'run':'idle');let moving=p.action==='run';if(p.spriteBack===undefined)p.spriteBack=p.team===0;if(moving){let forward=Math.cos(p.facing);if(forward>.4)p.spriteBack=true;else if(forward<-.4)p.spriteBack=false;let lateral=Math.sin(p.facing);if(lateral<-.45)p.spriteMirror=true;else if(lateral>.45)p.spriteMirror=false}let back=p.spriteBack;let start=0,count=1,row=0;switch(pose){case 'run':row=2;start=1;count=8;break;case 'pass':row=0;start=2;count=7;break;case 'set':row=4;start=2;count=8;break;case 'attack':row=8;start=5;count=4;break;case 'dive':row=10;start=1;count=9;break}let frame=moving&&pose==='run'?start+Math.floor(p.anim*5)%count:start+Math.min(count-1,Math.floor(Math.max(0,1-(p.actionTime||0)/.55)*count));const atlas=this.playerAtlas(p,team);
+  m.sprite.visible=!!atlas;
+  if(!atlas)return;
   if(m.atlas!==atlas){
    const frameTexture=atlas.clone();
    frameTexture.repeat.y=1/12;
@@ -81,7 +104,7 @@ export class View{
   const texture=m.sprite.material.map;let mirror=(pose==='run'||pose==='dive')&&!!p.spriteMirror;texture.repeat.x=(mirror?-1:1)/12;texture.offset.x=(frame+(mirror?1:0))/12;texture.offset.y=1-(row+(back?1:0)+1)/12;}
  pointer(clientX,clientY){let rect=this.renderer.domElement.getBoundingClientRect();this.ray.setFromCamera(new THREE.Vector2((clientX-rect.left)/rect.width*2-1,-((clientY-rect.top)/rect.height)*2+1),this.camera);let v=new THREE.Vector3();return this.ray.ray.intersectPlane(this.plane,v)?{x:v.x,z:v.z}:null}
  resize(){let w=this.host.clientWidth,h=this.host.clientHeight;this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.fov=w/h<.8?55:38;this.camera.updateProjectionMatrix();this.camera.projectionMatrix.elements[0]*=1.16;this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert()}
- render(game){let now=performance.now(),dt=Math.min((now-this.lastRender)/1000,.1);this.lastRender=now;this.updateCoaches(game.teams,dt);this.stands.update(dt);this.updateCometTrail(game,dt);if(this.impactTime>0){this.impactTime=Math.max(0,this.impactTime-dt);let progress=1-this.impactTime/.42;this.impact.scale.setScalar(.6+progress*2);this.impact.material.opacity=1-progress;this.impact.material.rotation=progress*.5;this.impact.visible=this.impactTime>0}let desired=game.ball.live?THREE.MathUtils.clamp(game.ball.z*.045,-.22,.22):0;this.cameraYaw+=(desired-this.cameraYaw)*(1-Math.exp(-dt*1.8));this.camera.position.set(-27*Math.cos(this.cameraYaw),20,27*Math.sin(this.cameraYaw));this.camera.lookAt(0,0,0);game.cameraYaw=this.cameraYaw;for(let i=0;i<game.players.length;i++){let p=game.players[i],m=this.playerMeshes[i];m.sprite.position.set(p.x,.1+p.y,p.z);this.updatePlayerSprite(p,m,game.teams[p.team]);m.shadow.position.set(p.x,.1,p.z);m.shadow.scale.setScalar(1-p.y*.12);m.marker.visible=p===game.controlled&&!game.liberoOff;m.marker.position.set(p.x,.11,p.z)}let b=game.ball;this.ball.position.set(b.x,b.y,b.z);this.ball.material.rotation+=.03;this.ballShadow.position.set(b.x,.1,b.z);this.ballShadow.scale.setScalar(Math.max(.35,1-b.y*.08));this.aim.position.set(game.aim.x,.1,game.aim.z);this.aim.material.color.set(game.aimValid()?0xe4ff68:0xff7a70);let pts=[];let shot=game.previewShot();if(shot){let t=shot.destination,T=shot.duration;if(shot.waypoint){pts.push(new THREE.Vector3(b.x,b.y,b.z),new THREE.Vector3(shot.waypoint.x,shot.waypoint.y,shot.waypoint.z));if(!shot.blockedAngle)pts.push(new THREE.Vector3(t.x,t.y,t.z))}else for(let i=0;i<=24;i++){let f=i/24;let y=b.y+(t.y-b.y)*f+.5*shot.gravity*T*T*f*(1-f);pts.push(new THREE.Vector3(b.x+(t.x-b.x)*f,y,b.z+(t.z-b.z)*f))}}this.line.geometry.setFromPoints(pts);this.updateSetIndicator(game);this.renderer.render(this.scene,this.camera)}
+ render(game){let now=performance.now(),dt=Math.min((now-this.lastRender)/1000,.1);this.lastRender=now;this.updateCoaches(game,dt);this.stands.update(dt);this.updateCometTrail(game,dt);if(this.impactTime>0){this.impactTime=Math.max(0,this.impactTime-dt);let progress=1-this.impactTime/.42;this.impact.scale.setScalar(.6+progress*2);this.impact.material.opacity=1-progress;this.impact.material.rotation=progress*.5;this.impact.visible=this.impactTime>0}let desired=game.ball.live?THREE.MathUtils.clamp(game.ball.z*.045,-.22,.22):0;this.cameraYaw+=(desired-this.cameraYaw)*(1-Math.exp(-dt*1.8));this.camera.position.set(-27*Math.cos(this.cameraYaw),20,27*Math.sin(this.cameraYaw));this.camera.lookAt(0,0,0);game.cameraYaw=this.cameraYaw;for(let i=0;i<game.players.length;i++){let p=game.players[i],m=this.playerMeshes[i];m.sprite.position.set(p.x,.1+p.y,p.z);this.updatePlayerSprite(p,m,game.teams[p.team]);m.shadow.position.set(p.x,.1,p.z);m.shadow.scale.setScalar(1-p.y*.12);m.marker.visible=p===game.controlled&&!game.liberoOff;m.marker.position.set(p.x,.11,p.z)}let b=game.ball;this.ball.position.set(b.x,b.y,b.z);this.ball.material.rotation+=.03;this.ballShadow.position.set(b.x,.1,b.z);this.ballShadow.scale.setScalar(Math.max(.35,1-b.y*.08));this.aim.position.set(game.aim.x,.1,game.aim.z);this.aim.material.color.set(game.aimValid()?0xe4ff68:0xff7a70);let pts=[];let shot=game.previewShot();if(shot){let t=shot.destination,T=shot.duration;if(shot.waypoint){pts.push(new THREE.Vector3(b.x,b.y,b.z),new THREE.Vector3(shot.waypoint.x,shot.waypoint.y,shot.waypoint.z));if(!shot.blockedAngle)pts.push(new THREE.Vector3(t.x,t.y,t.z))}else for(let i=0;i<=24;i++){let f=i/24;let y=b.y+(t.y-b.y)*f+.5*shot.gravity*T*T*f*(1-f);pts.push(new THREE.Vector3(b.x+(t.x-b.x)*f,y,b.z+(t.z-b.z)*f))}}this.line.geometry.setFromPoints(pts);this.updateSetIndicator(game);this.renderer.render(this.scene,this.camera)}
 }
 
 

@@ -1,18 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Game} from '../src/game.js';
-
-test('partida com elenco genérico ignora atleta do menu e Finanças pode jogar do outro lado',()=>{
- const game=new Game({role:'Central',athlete:'leonel',homeTeam:'humanas',rivalTeam:'financas',quick:true},()=>{});
- assert.deepEqual(game.teams.map(team=>team.id),['humanas','financas']);
- assert.equal(game.controlled.role,'Central');
- assert.equal(game.playerName(game.controlled),undefined);
- assert.equal(game.playerName(game.players[8]),'Leonel');
- const rivalLibero=game.players.find(player=>player.team===1&&player.role==='Líbero');
- assert.equal(game.playerName(rivalLibero),'Betinho');
-});
-import {athletes,athletesForRole,coach} from '../src/roster.js';
+import {athletes,athletesForRole,coach,drawRivalRoster} from '../src/roster.js';
 import {transformSpritePixels} from '../src/sprite-variants.js';
+
+test('somente Rino Finanças é jogável e adversários têm elenco sem repetição',()=>{
+ const game=new Game({role:'Ponteiro',athlete:'gn',homeTeam:'phanters',rivalTeam:'humanas',quick:true},()=>{});
+ assert.deepEqual(game.teams.map(team=>team.name),['Rino Finanças','Humanas']);
+ assert.equal(game.playerName(game.controlled),'GN');
+ const {lineup,libero,coach}=game.rivalRoster;
+ assert.equal(new Set([...lineup,libero,coach]).size,8);
+ assert.ok(athletes.some(athlete=>athlete.id===coach));
+ const rivals=game.players.filter(player=>player.team===1);
+ assert.equal(game.playerName(rivals[0]),undefined);
+ for(let rotation=0;rotation<6;rotation++){
+  game.rules.rotation[1]=rotation;
+  game.rules.server=0;
+  game.serve();
+  for(const player of rivals){
+   assert.equal(player.athleteId,player.role==='Líbero'?libero:lineup[player.index]);
+  }
+ }
+ assert.notDeepEqual(drawRivalRoster(()=>0),drawRivalRoster(()=>.99));
+});
 
 test('cada atleta pode ser escolhido em sua posição',()=>{
  for(const athlete of athletes){

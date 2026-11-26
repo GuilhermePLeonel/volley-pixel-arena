@@ -52,7 +52,9 @@ body:has(.menu.hidden) .score{top:8px}body:has(.menu.hidden) .match-meta{top:aut
 }
 .team-selectors select{padding-right:29px;text-overflow:ellipsis}
 .team-selectors+.menu-grid{margin-top:12px}
-.menu-grid.generic-roster{grid-template-columns:repeat(2,minmax(0,1fr))}
+.fixed-team{display:flex;flex-direction:column;align-self:center;gap:4px}
+.fixed-team small{font-size:10px;letter-spacing:.15em;font-weight:700;color:#aabcb6}
+.fixed-team strong{font-family:'Barlow Condensed',sans-serif;font-size:clamp(21px,6vw,28px);line-height:1;color:#ff994e}
 @media (pointer:coarse), (max-width:700px), (max-height:500px) and (max-width:900px){
  .team-selectors{gap:7px;margin-top:12px}
  .team-selectors select{min-height:48px;margin-top:6px;font-size:16px;padding:10px 24px 10px 8px}

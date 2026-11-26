@@ -1,22 +1,24 @@
 import {clamp,dist,launch,shotDuration,shotGravity,stepBall,MAX_SPIKE_SPEED} from './physics.js';
 import {Rules} from './rules.js';
 import {makePlayers,updateAI,receptionFormation,tacticalFormation,serveReceiveFormation,serverIndex,isFront,attackSpot,chooseAIAttackTarget} from './ai.js';
-import {assignAthletes,athleteById} from './roster.js';
-import {hasNamedRoster,matchTeams} from './teams.js';
+import {assignAthletes,athleteById,drawRivalRoster} from './roster.js';
+import {matchTeams} from './teams.js';
 export class Game{
  constructor(options,notify){this.options=options;this.notify=notify;this.rules=new Rules(options.quick);this.players=makePlayers();
-  this.teams=matchTeams(options.homeTeam,options.rivalTeam);
-  const selectedAthlete=hasNamedRoster(this.teams[0])?options.athlete:null;
-  this.liberoAthletes=this.teams.map((team,index)=>hasNamedRoster(team)
-   ?assignAthletes(this.players,index===0?selectedAthlete:null,index):null);
-  this.controlled=options.role==='Líbero'?this.players[4]:this.players.find(p=>p.team===0&&selectedAthlete&&p.athleteId===selectedAthlete)||this.players.find(p=>p.team===0&&p.role===options.role)||this.players[2];this.liberoOff=false;this.ball={x:0,y:1,z:0,vx:0,vy:0,vz:0,live:false};this.aim={x:5,z:0};this.keys={};this.touchMove={x:0,y:0};this.charge=null;this.difficulty=options.difficulty;this.paused=false;this.timer=1.5;this.message='Prepare-se para o saque';this.training=options.training;this.lastHit='';this.hitLock=0;this.setTarget=null;this.serve();}
+  this.teams=matchTeams(options.rivalTeam);
+  this.rivalRoster=drawRivalRoster();
+  this.liberoAthletes=[assignAthletes(this.players,options.athlete),this.rivalRoster.libero];
+  for(const player of this.players){
+   if(player.team===1)player.baseAthleteId=this.rivalRoster.lineup[player.index];
+  }
+  this.controlled=options.role==='Líbero'?this.players[4]:this.players.find(p=>p.team===0&&p.athleteId===options.athlete)||this.players.find(p=>p.team===0&&p.role===options.role)||this.players[2];this.liberoOff=false;this.ball={x:0,y:1,z:0,vx:0,vy:0,vz:0,live:false};this.aim={x:5,z:0};this.keys={};this.touchMove={x:0,y:0};this.charge=null;this.difficulty=options.difficulty;this.paused=false;this.timer=1.5;this.message='Prepare-se para o saque';this.training=options.training;this.lastHit='';this.hitLock=0;this.setTarget=null;this.serve();}
  applyLibero(){for(const p of this.players){p.role=p.baseRole;p.athleteId=p.baseAthleteId;}this.liberoOff=false;for(const team of [0,1]){let back=this.players.find(p=>p.team===team&&p.baseRole==='Central'&&!isFront(p,this.rules.rotation[team]));if(!back)continue;let serving=this.rules.server===team&&back.index===serverIndex(this.rules.rotation[team]);let humanCentral=team===0&&this.options.role==='Central'&&back===this.controlled;if(!serving&&!humanCentral){back.role='Líbero';back.athleteId=this.liberoAthletes[team];}if(team===0&&this.options.role==='Líbero'){this.controlled=back;this.liberoOff=serving}}} serve(){this.setTarget=null;this.aiCoord=[{},{}];this.applyLibero();let t=this.rules.server;for(const player of this.players){let position=player.team===t?tacticalFormation(player,this.rules.rotation[player.team]):receptionFormation(player,this.rules.rotation[player.team]);player.x=position.x;player.z=position.z;player.navX=undefined;player.navZ=undefined;player.moveVX=0;player.moveVZ=0;player.moving=false}let p=this.players[t*6+serverIndex(this.rules.rotation[t])];p.x=t?10.4:-10.4;p.z=t?-2.8:2.8;p.action='idle';this.ball.x=p.x;this.ball.z=p.z;this.ball.y=1.8;this.ball.vx=this.ball.vy=this.ball.vz=0;this.ball.live=false;this.ball.comet=false;this.awaitUserServe=p===this.controlled&&!this.liberoOff;this.timer=1.5;this.message=this.awaitUserServe?'Seu saque · clique ou salte para sacar':t===0?'Seu time vai sacar':'Saque adversário';this.notify('whistle')}
  planServeShot(target,power,jumping){let b=this.ball,team=this.rules.server;let x=team?Math.min(-.5,target.x):Math.max(.5,target.x);let destination={x,z:target.z,y:.35};let gravity=jumping?16:9.8;let duration=jumping?1.2-.55*power:1.55-.32*power;let fraction=-b.x/(destination.x-b.x);let baseline=b.y+(destination.y-b.y)*fraction;let clearance=(2.83-baseline)/(.5*gravity*fraction*(1-fraction));if(clearance>0)duration=Math.max(duration,Math.sqrt(clearance));return {destination,duration:clamp(duration,.35,2.3),gravity,waypoint:null}}
  chargeTime(){
   const duration=this.awaitUserServe?750:1100;
   return this.charge?.mobile?Math.round(duration*.7):duration;
  }
- playerName(player){return athleteById(player.athleteId)?.name}
+ playerName(player){return player.team===0?athleteById(player.athleteId)?.name:undefined}
  userServe(target,power){if(!this.awaitUserServe||this.ball.live||this.paused||this.rules.over)return false;let jumping=this.controlled.y>.1;this.doServe({target,power:clamp(power,.12,1),jumping});return true}
  doServe(manual=null){let t=this.rules.server;let p=this.players[t*6+serverIndex(this.rules.rotation[t])];p.x=t?10.4:-10.4;p.z=t?-2.8:2.8;this.ball.x=p.x;this.ball.z=p.z;this.ball.y=1.8+(manual?p.y:0);p.actionPose='attack';p.actionTime=.55;this.ball.live=true;this.awaitUserServe=false;this.serveFlight=true;this.ball.pendingFault=null;this.ball.assistTarget=null;this.ball.comet=false;this.ball.targetTeam=1-t;this.hitLock=.25;this.rules.side=t;this.rules.touches=1;this.rules.last=p.id;if(manual){let shot=this.planServeShot(manual.target,manual.power,manual.jumping);launch(this.ball,shot.destination,shot.duration,shot.gravity);this.message=manual.jumping?'Saque viagem':'Saque parado'}else{launch(this.ball,{x:t?-5:5,z:(Math.random()-.5)*5,y:.65},1.25);this.message='Rally em andamento'}this.notify('serve')}
  shortAttackInvalid(){if(!this.charge||this.awaitUserServe||this.charge.button===2)return false;let p=this.controlled,other=p.team===0?this.aim.x>0:this.aim.x<0;return other&&p.y<=.2&&Math.abs(this.aim.x)<3&&Math.abs(this.aim.z)<=4.5}

@@ -37,12 +37,13 @@ export function variantTexture(source, skin, whiteJersey){
  return canvas;
 }
 
-export function teamUniform(source, team, {libero=false, coach=false}={}){
+export function teamUniform(source, team, {libero=false, whiteBase=false}={}){
+ const frameSize=80;
  const canvas=document.createElement('canvas');
- canvas.width=source.width;
- canvas.height=source.height;
+ canvas.width=canvas.height=frameSize*12;
  const ctx=canvas.getContext('2d',{willReadFrequently:true});
- ctx.drawImage(source,0,0);
+ ctx.imageSmoothingEnabled=false;
+ ctx.drawImage(source,0,0,canvas.width,canvas.height);
  const image=ctx.getImageData(0,0,canvas.width,canvas.height);
  const primary=hexChannels(libero?'#e9ece2':team.primary);
  const secondary=hexChannels(libero?team.primary:team.secondary);
@@ -52,19 +53,21 @@ export function teamUniform(source, team, {libero=false, coach=false}={}){
   const position=i/4;
   const x=position%canvas.width;
   const y=Math.floor(position/canvas.width);
-  const row=Math.floor(y/80);
-  const headBottom=[27,27,30,30,35,35,30,30,27,27,23,23][row]??30;
-  const dive=row>=10&&Math.floor(x/80)>=3&&Math.floor(x/80)<=8;
-  const onUniform=coach?(x/canvas.width>.34&&x/canvas.width<.86&&y/canvas.height>.42&&y/canvas.height<.8)
-   :(y%80>headBottom&&y%80<60&&(!dive||x%80<48));
+  const row=Math.floor(y/frameSize), column=Math.floor(x/frameSize);
+  const localX=x%frameSize, localY=y%frameSize;
+  const shoulders=[28,28,27,27,31,31,30,30,28,28,25,25][row];
+  const dive=row>=10&&column>=3&&column<=8;
+  const onUniform=localY>shoulders&&localY<62&&(!dive||localX<48);
   if(!onUniform)continue;
   const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
-  const isFabric=coach?r>16&&r<100&&Math.max(r,g,b)-Math.min(r,g,b)<20
-   :b>42&&b<160&&b>r+7&&b>g+3;
-  const isTrim=r>115&&r>g*1.48&&g>b*1.7;
+  const range=Math.max(r,g,b)-Math.min(r,g,b);
+  const neutralDark=r>=22&&r<100&&range<25;
+  const paleJersey=whiteBase&&r>110&&range<25&&localY<55;
+  const isFabric=neutralDark||paleJersey;
+  const isTrim=r>130&&r>g*1.55&&g>b*1.65;
   if(!isFabric&&!isTrim)continue;
   const color=isFabric?primary:secondary;
-  const shade=isFabric?Math.max(.58,Math.min(1.28,(coach?r:b)/75+.25)):.68+r/650;
+  const shade=paleJersey?.5+r/480:isFabric?Math.max(.55,Math.min(1.2,(r+g+b)/240+.25)):.68+r/650;
   for(let channel=0;channel<3;channel++)pixels[i+channel]=color[channel]*shade;
  }
  ctx.putImageData(image,0,0);

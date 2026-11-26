@@ -15,7 +15,7 @@ export const athleteById = id => athletes.find(a=>a.id===id);
 export const athletesForRole = role => athletes.filter(a=>a.role===role);
 export const startingLineup = ['joao','thiago','leonel','gaga','ryan','gn'];
 
-export function assignAthletes(players, selectedId, team=0){
+export function assignAthletes(players, selectedId){
  const selected=athleteById(selectedId);
  const lineup=[...startingLineup];
  // Two players of the same position already have their own rotation slots.
@@ -25,9 +25,16 @@ export function assignAthletes(players, selectedId, team=0){
   if(i>=0)lineup[i]=selected.id;
  }
  for(const p of players){
-  if(p.team!==team)continue;
+  if(p.team!==0)continue;
   p.baseAthleteId=lineup[p.index];
   p.athleteId=p.baseAthleteId;
  }
  return selected?.role==='Líbero'?selected.id:'betinho';
+}
+
+export function drawRivalRoster(random=Math.random){
+ const pool=athletes.map(athlete=>athlete.id);
+ const draw=()=>pool.splice(Math.floor(random()*pool.length),1)[0];
+ const lineup=Array.from({length:6},draw);
+ return {lineup,libero:draw(),coach:draw()};
 }
