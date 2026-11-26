@@ -27,17 +27,17 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 
 ## Implementado
 
-- Quadra low-poly em Three.js, câmera em perspectiva, rede, antenas, sombras e 12 sprites originais desenhados em canvas e voltados para a câmera.
+- Quadra low-poly em Three.js com proporção regulamentar de 18 × 9, projeção visual mais larga e câmera em perspectiva que acompanha a bola suavemente. Rede, antenas, sombras e 12 sprites originais voltados para a câmera.
 - Bola com gravidade e trajetórias balísticas, rede, antenas, piso, limite da quadra, mira no chão, indicação de alvo e arco aproximado.
 - Jogador selecionável, movimento, corrida, salto, mergulho simplificado, contatos contextuais, força e direção; sons sintéticos.
-- IA local com formação, previsão de trajetória, escolha de interceptador, recepção, levantamento e envio; três níveis ajustam principalmente a movimentação.
-- Rally point, contagem de toques, dois toques consecutivos, pontuação dentro/fora, rotação simplificada quando o saque muda de equipe, set rápido até 7 ou melhor de cinco até 25 (tie-break até 15), com diferença de dois.
+- IA local com formação 5x1 simplificada, previsão de trajetória e um interceptador designado. Após o saque, o levantador infiltra e os jogadores se deslocam às suas zonas de ataque ou defesa; os três níveis ajustam movimentação e frequência de erros.
+- Rally point, contagem de toques, dois toques consecutivos, pontuação dentro/fora, sequência de saque e seis rotações. Há verificação simplificada de ataque do fundo e do líbero acima da rede; set rápido até 7 ou melhor de cinco até 25 (tie-break até 15), com diferença de dois.
 - Treino contínuo básico, pausa e reinício. Física e placar possuem testes automatizados.
 
 ## Limitações conhecidas
 
-- A IA e as rotações são aproximações arcade, não uma implementação tática 5x1 completa. Bloqueios, coberturas, infiltração, aproximações, saques manuais e posicionamento regulamentar não foram implementados integralmente.
-- Líbero é selecionável e tem mergulho simplificado; substituições reais, restrições completas e defesa específica ainda faltam. Faltas de invasão, toque na rede, ataque de fundo e várias exceções de contato não são verificadas.
+- A IA implementa uma organização 5x1 básica, não todas as estratégias profissionais. Coberturas, bloqueios, aproximações, saque manual, faltas de posição do jogador controlado e ajustes finos de cada rotação ainda não são completos.
+- Líbero é selecionável e tem mergulho simplificado; substituições reais, restrições completas e defesa específica ainda faltam. Faltas de invasão, toque na rede e várias exceções de contato ainda não são verificadas; a regra de ataque de fundo é uma aproximação.
 - Os sprites têm poses simples de corrida, manchete, levantamento, ataque e mergulho; ainda não há oito direções nem todas as animações solicitadas.
 - O treino oferece rallies repetidos, sem exercícios individuais nem avaliação de precisão. A dificuldade ainda não altera decisões ou precisão em todos os aspectos previstos.
 - A previsão visual usa a trajetória inicial planejada, mas pode mudar devido a contatos ou colisões; a qualidade do toque não considera todos os fatores de posição e timing. Não há controles de volume separados ou todas as categorias de áudio.
@@ -55,4 +55,9 @@ Sprites, geometria e efeitos sonoros são gerados pelo código deste projeto. Th
 
 Priorizar testes de jogabilidade com pessoas, melhorar interceptação e timing, implementar 5x1 e substituições de líbero, depois adicionar animações direcionais, treinamento por fundamento e regras oficiais completas.
 
+
+
+## Referência de regras
+
+A formação de recepção preserva a ordem relativa até o saque; a equipe sacadora pode se organizar livremente, conforme as [regras oficiais FIVB 2025–2028](https://www.fivb.com/wp-content/uploads/2025/01/FIVB-Volleyball_Rules2025_2028-EN-v05.pdf), seção 7.4. A implementação ainda não verifica todos os detalhes de posicionamento do jogador humano.
 
