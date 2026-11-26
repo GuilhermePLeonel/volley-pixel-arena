@@ -1,4 +1,4 @@
-# Volley Pixel Arena
+# VOLLEY RINO
 
 Protótipo de vôlei de quadra para navegador, com quadra 3D em perspectiva vista de cima e atrás do time e personagens e bola desenhados como sprites pixelados. É um MVP arcade: **não é uma simulação completa das regras FIVB**.
 
