@@ -153,7 +153,7 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
  .mobile-controls {
   --move-size:clamp(72px,28vw,110px);
   --attack-size:clamp(68px,26vw,104px);
-  --tip-size:clamp(49px,16vw,66px);
+  --jump-size:clamp(49px,16vw,66px);
   grid-column:1 / -1;
   grid-row:4;
   display:flex;
@@ -161,8 +161,8 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
   align-items:flex-end;
   gap:8px;
  }
- .move-controls,.shot-controls {display:grid;justify-items:center;gap:8px}
- .shot-buttons {display:flex;align-items:center;gap:8px}
+ .move-controls,.action-controls {display:grid;justify-items:center;gap:8px}
+ .action-buttons {display:flex;align-items:center;gap:8px}
  .joystick,.touch-button,.pause-touch {pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
  .joystick {
   position:relative;
@@ -178,12 +178,11 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
   position:absolute;left:50%;top:50%;width:42%;aspect-ratio:1;
   transform:translate(-50%,-50%);border-radius:50%;background:var(--accent);border:3px solid #fff9;box-shadow:0 3px 12px #0005;
  }
- .joystick-knob span {display:grid;place-items:center;height:100%;font-size:23px;font-weight:800;color:var(--page)}
  .move-help,.touch-aim-help {
   max-width:var(--move-size);
   text-align:center;color:var(--text);font-size:9px;font-weight:700;line-height:1.35;letter-spacing:.05em;text-shadow:0 1px 5px #000;
  }
- .touch-aim-help {max-width:calc(var(--attack-size) + var(--tip-size))}
+ .touch-aim-help {max-width:calc(var(--attack-size) + var(--jump-size))}
  .touch-button {
   position:relative;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -195,7 +194,7 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
  .charge-fill {position:absolute;left:50%;top:50%;width:96%;height:96%;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%) scale(.3);pointer-events:none}
  .aim-knob {position:absolute;left:50%;top:50%;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid #fff9;background:#2d2d2d;transform:translate(-50%,-50%);box-shadow:0 2px 8px #0005;pointer-events:none}
  .touch-button .aim-knob span {font-size:10px;color:#fff;font-weight:800}
- .tip-touch {width:var(--tip-size);height:var(--tip-size);border-radius:50%;font-size:9px}
+ .jump-touch {width:var(--jump-size);height:var(--jump-size);border-radius:50%;font-size:9px}
  .pause-touch {
   grid-area:pause;
   display:grid;place-items:center;align-self:start;
@@ -205,7 +204,7 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
 }
 @media (pointer:coarse) and (orientation:landscape) and (max-height:500px), (max-height:500px) and (max-width:900px){
  .menu{top:64px;max-height:calc(100dvh - 68px);width:min(490px,90%)}.menu h1{font-size:52px}.menu p{margin:8px 0}.athlete-portrait{height:52px}
- .mobile-controls {--move-size:86px;--attack-size:82px;--tip-size:52px}
+ .mobile-controls {--move-size:86px;--attack-size:82px;--jump-size:52px}
  .move-help,.touch-aim-help {font-size:8px}
 }
 @media (pointer:coarse) and (orientation:landscape) and (max-height:500px), (orientation:landscape) and (max-height:500px) and (max-width:900px) {

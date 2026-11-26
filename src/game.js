@@ -328,7 +328,7 @@ export class Game{
    const length=Math.hypot(dx,dz);
    if(length){
     const strength=Math.min(1,length);
-    const speed=keyboard?(this.keys.shift?5.2:3.4):(3.4+1.8*strength)*strength;
+    const speed=keyboard?(this.keys.shift?5.2:3.4):(3.4+1.8*strength)*strength*1.1;
     const angle=this.cameraYaw||0;
     const mx=(-dz*Math.cos(angle)+dx*Math.sin(angle))/length;
     const mz=(dz*Math.sin(angle)+dx*Math.cos(angle))/length;

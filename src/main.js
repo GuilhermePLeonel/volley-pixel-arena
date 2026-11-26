@@ -37,18 +37,18 @@ app.innerHTML=`<div id="stage"></div><div class="grain"></div><header class="top
  <div class="bottom-right"><span><kbd>W A S D</kbd> MOVER</span><span><kbd>SHIFT</kbd> CORRER</span><span><kbd>ESPAÇO</kbd> SALTAR</span><span><kbd>ESC</kbd> PAUSAR</span></div>
  <div class="mobile-controls" id="mobileControls">
   <div class="move-controls">
-   <span class="move-help">MOVER · TOQUE PARA PULAR</span>
-   <div id="joystick" class="joystick" role="application" aria-label="Analógico de movimento; toque para saltar"><span class="joystick-cross"></span><span class="joystick-knob" id="joystickKnob"><span>↑</span></span></div>
+   <span class="move-help">MOVER · CORRER</span>
+   <div id="joystick" class="joystick" role="application" aria-label="Analógico para andar e correr"><span class="joystick-cross"></span><span class="joystick-knob" id="joystickKnob"></span></div>
   </div>
-  <div class="shot-controls">
+  <div class="action-controls">
    <span class="touch-aim-help">CARREGUE E MOVA PARA MIRAR</span>
-   <div class="shot-buttons">
-    <button id="tipTouch" class="touch-button tip-touch" aria-label="Segure e arraste para dar uma largada">LARGADA</button>
+   <div class="action-buttons">
+    <button id="jumpTouch" class="touch-button jump-touch" type="button" aria-label="Pular ou mergulhar">PULAR</button>
     <button id="attackTouch" class="touch-button attack-touch" aria-label="Segure para carregar, mova para mirar e solte para tocar"><span id="chargeFill" class="charge-fill"></span><span id="aimKnob" class="aim-knob"><span id="chargeValue">0%</span></span></button>
    </div>
   </div>
  </div>
-</div><div class="corner-label">VOLLEY RINO <span>✳</span> TEMPORADA 01</div><div id="pause" class="modal hidden"><div><small>TEMPO TÉCNICO</small><h2>JOGO PAUSADO</h2><button id="resume" class="primary">CONTINUAR</button><button id="restart" class="secondary">NOVA PARTIDA</button><button id="back" class="textbtn">VOLTAR AO MENU</button></div></div><div id="help" class="modal hidden"><div><small>GUIA RÁPIDO</small><h2>COMO JOGAR</h2><p class="touch-guide">No celular, arraste o analógico à esquerda para mover ou dê um toque rápido nele para pular. À direita, segure o círculo para carregar o toque e mova o dedo dentro dele para deslocar a mira; solte para bater. O botão LARGADA faz uma jogada precisa. Você também pode tocar diretamente na quadra para ajustar a mira.</p><p class="desktop-guide"><b>W A S D</b> movimenta em relação à câmera; <b>Shift</b> corre e <b>Espaço</b> salta ou mergulha.</p><p class="desktop-guide">Mire no chão com o mouse. Segure e solte o <b>botão esquerdo</b> para recepcionar, levantar ou atacar. O <b>direito</b> faz uma largada precisa. Para atacar curto com o esquerdo, é preciso saltar. Quando você for sacar, clique para o saque parado ou salte e carregue para o saque viagem.</p><p>Nos dois primeiros toques, posicione-se sob a bola em queda para realizar um passe automático na direção do mouse. O terceiro toque é manual. A partir de 70%, o ataque ganha velocidade; em 100%, há impacto máximo. Seu jogador começa o ponto na formação da equipe e você assume seus deslocamentos após o saque. O círculo verde indica o destino do levantamento; o nome acima do atleta mostra quem deve atacar.</p><button id="closeHelp" class="primary">ENTENDI</button></div></div>`;
+</div><div class="corner-label">VOLLEY RINO <span>✳</span> TEMPORADA 01</div><div id="pause" class="modal hidden"><div><small>TEMPO TÉCNICO</small><h2>JOGO PAUSADO</h2><button id="resume" class="primary">CONTINUAR</button><button id="restart" class="secondary">NOVA PARTIDA</button><button id="back" class="textbtn">VOLTAR AO MENU</button></div></div><div id="help" class="modal hidden"><div><small>GUIA RÁPIDO</small><h2>COMO JOGAR</h2><p class="touch-guide">No celular, arraste o analógico à esquerda para andar ou correr. Toque em PULAR para saltar ou mergulhar como líbero. Use o botão maior à direita para carregar e mover a mira. Solte para bater. Para atacar curto, pule antes de bater. Você também pode tocar na quadra para ajustar a mira.</p><p class="desktop-guide"><b>W A S D</b> movimenta em relação à câmera; <b>Shift</b> corre e <b>Espaço</b> salta ou mergulha.</p><p class="desktop-guide">Mire no chão com o mouse. Segure e solte o <b>botão esquerdo</b> para recepcionar, levantar ou atacar. O <b>direito</b> faz uma largada precisa. Para atacar curto com o esquerdo, é preciso saltar. Quando você for sacar, clique para o saque parado ou salte e carregue para o saque viagem.</p><p>Nos dois primeiros toques, posicione-se sob a bola em queda para realizar um passe automático na direção do mouse. O terceiro toque é manual. A partir de 70%, o ataque ganha velocidade; em 100%, há impacto máximo. Seu jogador começa o ponto na formação da equipe e você assume seus deslocamentos após o saque. O círculo verde indica o destino do levantamento; o nome acima do atleta mostra quem deve atacar.</p><button id="closeHelp" class="primary">ENTENDI</button></div></div>`;
 let game=new Game({role:'Ponteiro',difficulty:'Normal',quick:true,training:false},()=>{});let view=new View(document.querySelector('#stage'),game.players);let active=false, audio=null;
 function sound(type,position){if(type==='point')view.showCoachReaction(position?.team);if(type==='impact'){view.showImpact(position);if(audio)playExplosion(audio);return}if(!audio)return;let o=audio.createOscillator(),g=audio.createGain();let f={hit:190,pass:300,serve:240,point:520,whistle:900,net:120,jump:200,block:145}[type]||200;o.type=type==='whistle'?'sine':'triangle';o.frequency.setValueAtTime(f,audio.currentTime);o.frequency.exponentialRampToValueAtTime(f*.65,audio.currentTime+.12);g.gain.setValueAtTime(.025,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.13);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+.14)}
 const $=id=>document.getElementById(id);
@@ -136,7 +136,7 @@ function moveAim(x,y,dt){
   z:game.aim.z+(y*Math.sin(angle)+x*Math.cos(angle))*18*dt,
  });
  }
-const touch=installTouchControls({stick:$('joystick'),knob:$('joystickKnob'),attack:$('attackTouch'),aimKnob:$('aimKnob'),chargeFill:$('chargeFill'),chargeValue:$('chargeValue'),tip:$('tipTouch'),pause:$('pauseTouch'),canPlay,move:(x,y)=>{game.touchMove={x,y}},aim:moveAim,beginShot:button=>beginShot(button,true),endShot:finishShot,cancelShot,onJump:()=>game.special(),onPause:togglePause});
+const touch=installTouchControls({stick:$('joystick'),knob:$('joystickKnob'),attack:$('attackTouch'),aimKnob:$('aimKnob'),chargeFill:$('chargeFill'),chargeValue:$('chargeValue'),jump:$('jumpTouch'),pause:$('pauseTouch'),canPlay,move:(x,y)=>{game.touchMove={x,y}},aim:moveAim,beginShot:()=>beginShot(0,true),endShot:finishShot,cancelShot,onJump:()=>game.special(),onPause:togglePause});
 const tactics=installTacticalPanel({getGame:()=>game,isActive:()=>active,resetInput:()=>{
  touch.reset();game.keys={};game.paused=false;$('pause').classList.add('hidden');
 }});
@@ -177,7 +177,10 @@ function updateHUD(now){
 function matchHint(){
  if(game.rules.over)return '';
  if(game.liberoOff)return 'AGUARDE O RETORNO DO LÍBERO';
- if(touchLayout.matches)return game.awaitUserServe?'TOQUE PARA SACAR · PULE PARA SAQUE VIAGEM':'SEGURE E MOVA PARA MIRAR';
+ if(touchLayout.matches){
+  if(game.awaitUserServe)return 'TOQUE PARA SACAR · USE PULAR PARA SAQUE VIAGEM';
+  return game.ball.live&&game.shortAttackInvalid()?'PULE PARA ATACAR CURTO':'SEGURE E MOVA PARA MIRAR';
+ }
  if(game.awaitUserServe)return 'CLIQUE PARA SACAR · ESPAÇO PARA SALTAR';
  if(!game.ball.live)return 'AGUARDE O SAQUE';
  if(game.shortAttackInvalid())return 'BOLA CURTA: SALTE OU USE O BOTÃO DIREITO';
