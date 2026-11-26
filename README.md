@@ -1,6 +1,6 @@
 # Volley Pixel Arena
 
-Protótipo de vôlei de quadra para navegador, com quadra 3D ortográfica e personagens desenhados como sprites pixelados. É um MVP arcade: **não é uma simulação completa das regras FIVB**.
+Protótipo de vôlei de quadra para navegador, com quadra 3D ortográfica vista atrás do time e personagens e bola desenhados como sprites pixelados. É um MVP arcade: **não é uma simulação completa das regras FIVB**.
 
 ## Executar localmente
 
@@ -38,7 +38,7 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 
 - A IA e as rotações são aproximações arcade, não uma implementação tática 5x1 completa. Bloqueios, coberturas, infiltração, aproximações, saques manuais e posicionamento regulamentar não foram implementados integralmente.
 - Líbero é selecionável e tem mergulho simplificado; substituições reais, restrições completas e defesa específica ainda faltam. Faltas de invasão, toque na rede, ataque de fundo e várias exceções de contato não são verificadas.
-- Sprites têm duas poses de caminhada; não há oito direções ou todas as animações solicitadas. As ações não têm animações dedicadas.
+- Os sprites têm poses simples de corrida, manchete, levantamento, ataque e mergulho; ainda não há oito direções nem todas as animações solicitadas.
 - O treino oferece rallies repetidos, sem exercícios individuais nem avaliação de precisão. A dificuldade ainda não altera decisões ou precisão em todos os aspectos previstos.
 - A previsão visual é aproximada e não corresponde necessariamente à trajetória exata; a qualidade do toque não considera todos os fatores de posição e timing. Não há controles de volume separados ou todas as categorias de áudio.
 - A experiência foi projetada para teclado e mouse em desktop; telas pequenas não são o alvo principal.
@@ -54,3 +54,4 @@ Sprites, geometria e efeitos sonoros são gerados pelo código deste projeto. Th
 ## Próximos passos
 
 Priorizar testes de jogabilidade com pessoas, melhorar interceptação e timing, implementar 5x1 e substituições de líbero, depois adicionar animações direcionais, treinamento por fundamento e regras oficiais completas.
+
