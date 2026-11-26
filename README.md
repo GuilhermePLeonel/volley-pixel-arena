@@ -29,13 +29,13 @@ No celular, use o direcional à esquerda para se mover e o botão PULAR para sal
 
 ## Implementado
 
-- Quadra low-poly em Three.js com proporção regulamentar de 18 × 9, projeção visual mais larga e câmera em perspectiva que acompanha a bola suavemente. Rede, antenas, sombras e 12 jogadores com sprites fornecidos pelo usuário.
+- Quadra low-poly em Three.js com proporção regulamentar de 18 × 9, projeção visual mais larga e câmera em perspectiva que acompanha a bola suavemente. Rede, antenas listradas, árbitro em plataforma, sombras e 12 jogadores com sprites fornecidos pelo usuário.
 - Arquibancadas com torcedores animados em laranja e preto e bandeiras com o escudo fornecido pelo usuário.
-- Seleção de atletas por posição, com retratos e sprites individuais fornecidos pelo usuário; os líberos usam uniforme claro e Jefferson acompanha o jogo como técnico ao lado da quadra.
-- Bola com gravidade e trajetórias balísticas, rede, antenas, piso, limite da quadra, mira no chão, indicação de alvo e arco aproximado.
+- Seleção de atletas por posição, com retratos e sprites individuais fornecidos pelo usuário; os líberos usam uniforme claro e Jefferson acompanha o jogo em pé e comemora os pontos da equipe.
+- Bola com visual inspirado na Mikasa V200W, gravidade e trajetórias balísticas, rede, antenas, piso, limite da quadra, mira no chão, indicação de alvo e arco aproximado. A travessia por fora das antenas é considerada falta.
 - Jogador selecionável, movimento, corrida, salto, mergulho simplificado, contatos contextuais, força e direção; sons sintéticos.
 - Interface adaptável para celular, com direcional analógico, salto, força e mira por gestos multitoque.
-- IA local com formação 5x1 simplificada, previsão de trajetória e um interceptador designado. Após o saque adversário, o ponteiro recua para receber e o levantador de fundo aguarda o passe antes de infiltrar; o líbero e o ponteiro de fundo cobrem zonas distintas; os três níveis ajustam movimentação e frequência de erros.
+- IA local com formação 5x1 simplificada, previsão de trajetória e um interceptador designado. Os ataques são direcionados principalmente ao fundo, e a defesa prioriza atletas no fundo quando conseguem alcançar a bola. Após o saque adversário, o ponteiro recua para receber e o levantador de fundo aguarda o passe antes de infiltrar; o líbero e o ponteiro de fundo cobrem zonas distintas; os três níveis ajustam movimentação e frequência de erros.
 - Rally point, contagem de toques, dois toques consecutivos, pontuação dentro/fora, sequência de saque e seis rotações. Há verificação simplificada de ataque do fundo e do líbero acima da rede; set rápido até 7 ou melhor de cinco até 25 (tie-break até 15), com diferença de dois.
 - Treino contínuo básico, pausa e reinício. Física e placar possuem testes automatizados.
 

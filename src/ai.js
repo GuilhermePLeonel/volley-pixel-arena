@@ -6,6 +6,15 @@ export const slots=[[-7,2.8],[-3,2.8],[-3,0],[-3,-2.8],[-7,-2.8],[-7,0]];
 export const rotationSlot=(p,rotation)=>(p.index-rotation+6)%6;
 export const serverIndex=rotation=>rotation%6;
 export const isFront=(p,rotation)=>{const n=rotationSlot(p,rotation);return n>=1&&n<=3};
+export function chooseAIAttackTarget(team,difficulty,random=Math.random){
+ const error=difficulty==='Fácil'?1.7:difficulty==='Difícil'?.35:.85;
+ const deep=random()<.85;
+ const x=(team?-1:1)*(deep?6+random()*2.5:4+random()*2);
+ let z=(random()-.5)*(6+error);
+ const miss=difficulty==='Fácil'?.17:difficulty==='Difícil'?.06:.1;
+ if(random()<miss)z=(random()<.5?-1:1)*(4.7+random()*.9);
+ return {x,z};
+}
 const orient=(team,x,z)=>({x:team?-x:x,z:team?-z:z});
 export function formation(p,rotation){const s=slots[rotationSlot(p,rotation)];return orient(p.team,s[0],s[1]);}
 export function receptionFormation(p,rotation){let spot=formation(p,rotation);if(p.role==='Levantador'&&!isFront(p,rotation))spot.x=p.team?4.6:-4.6;return spot;}
@@ -26,11 +35,30 @@ export function serveReceiveFormation(p,rotation){
  else {x=-7;z=p.role==='Central'?2.8:0}
  return orient(p.team,x,z);
 }export function attackSpot(p,rotation){let spot=tacticalFormation(p,rotation,'offense');if(!isFront(p,rotation))spot.x=p.team?4.3:-4.3;return spot}export function makePlayers(){return [0,1].flatMap(team=>roles.map((role,index)=>{let p={id:team*6+index,team,role,baseRole:role,index,y:0,vy:0,anim:0,facing:0,action:'idle',cool:0};return {...p,...formation(p,0)}}))}
-export function chooseInterceptor(own,path,team,rules,speed,serveReceive=false){
+function interceptorChoices(own,path,team,rules,speed,serveReceive=false){
  const candidates=path.filter(q=>(team===0?q.x<-.25:q.x>.25)&&q.y<2.85&&q.y>.45);
- let best=null;
- for(const p of own){if(p.id===rules.last||(serveReceive&&p.role==='Levantador'&&!isFront(p,rules.rotation[team])))continue;for(const q of candidates){if(rules.side===team&&rules.touches===2&&!isFront(p,rules.rotation[team])&&Math.abs(q.x)<3&&q.y>2.55)continue;let travel=dist(p,q)/speed;let penalty=rules.side===team&&rules.touches===1&&p.role!=='Levantador'?.8:rules.side!==team&&p.role==='Levantador'?2.2:0;let score=Math.max(0,travel-q.t)*3+q.t*.3+travel*.25+penalty;if(!best||score<best.score)best={player:p,target:q,score};}}
- return best;
+ const defending=rules.side!==team,choices=[];
+ for(const p of own){
+  if(p.id===rules.last||(serveReceive&&p.role==='Levantador'&&!isFront(p,rules.rotation[team])))continue;
+  let best=null,reachable=false;
+  for(const q of candidates){
+   if(rules.side===team&&rules.touches===2&&!isFront(p,rules.rotation[team])&&Math.abs(q.x)<3&&q.y>2.55)continue;
+   let travel=Math.max(0,dist(p,q)-.7)/speed;
+   let penalty=rules.side===team&&rules.touches===1&&p.role!=='Levantador'?.8:defending&&p.role==='Levantador'?2.2:0;
+   let score=Math.max(0,travel-q.t)*3+q.t*.3+travel*.25+penalty;
+   if(travel<=q.t+.08)reachable=true;
+   if(!best||score<best.score)best={player:p,target:q,score};
+  }
+  if(best)choices.push({...best,reachable});
+ }
+ // Prefer defenders actually covering the back court only if one can reach
+ // the trajectory; close balls still belong to whoever can save them.
+ const backAvailable=defending&&choices.some(c=>Math.abs(c.player.x)>=4&&c.reachable);
+ if(backAvailable)for(const c of choices)if(Math.abs(c.player.x)<4)c.score+=1.4;
+ return choices.sort((a,b)=>a.score-b.score);
+}
+export function chooseInterceptor(own,path,team,rules,speed,serveReceive=false){
+ return interceptorChoices(own,path,team,rules,speed,serveReceive)[0]||null;
 }
 // Keep an interceptor long enough to avoid rapid back-and-forth changes.
 export function coordinateInterceptor(state,eligible,path,team,rules,speed,serveReceive,assigned,active,dt){
@@ -39,8 +67,8 @@ export function coordinateInterceptor(state,eligible,path,team,rules,speed,serve
  if(!active||!eligible.length){state.selection=null;state.timer=0;return null}
  state.timer-=dt;
  if(state.timer<=0){
-  let best=chooseInterceptor(eligible,path,team,rules,speed,serveReceive);
-  let current=state.selection&&chooseInterceptor(eligible.filter(p=>p.id===state.selection.player.id),path,team,rules,speed,serveReceive);
+  let choices=interceptorChoices(eligible,path,team,rules,speed,serveReceive);
+  let best=choices[0],current=state.selection&&choices.find(c=>c.player.id===state.selection.player.id);
   // A challenger must be meaningfully better before changing the assignment.
   state.selection=current&&best&&current.score<=best.score+.8?current:best;
   if(state.selection)state.selection={...state.selection,target:{...state.selection.target}};
