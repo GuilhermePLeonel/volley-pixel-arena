@@ -27,9 +27,9 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 
 ## Implementado
 
-- Quadra low-poly em Three.js com proporção regulamentar de 18 × 9, projeção visual mais larga e câmera em perspectiva que acompanha a bola suavemente. Rede, antenas, sombras e 12 jogadores com sprites do PDF fornecido pelo usuário.
+- Quadra low-poly em Three.js com proporção regulamentar de 18 × 9, projeção visual mais larga e câmera em perspectiva que acompanha a bola suavemente. Rede, antenas, sombras e 12 jogadores com sprites fornecidos pelo usuário.
 - Arquibancadas com torcedores animados em laranja e preto e bandeiras com o escudo fornecido pelo usuário.
-- Seleção de atletas por posição, com retratos da referência fornecida, tons de pele e uniforme claro para os líberos. Jefferson aparece como técnico da equipe.
+- Seleção de atletas por posição, com retratos e sprites individuais fornecidos pelo usuário; os líberos usam uniforme claro e Jefferson acompanha o jogo como técnico ao lado da quadra.
 - Bola com gravidade e trajetórias balísticas, rede, antenas, piso, limite da quadra, mira no chão, indicação de alvo e arco aproximado.
 - Jogador selecionável, movimento, corrida, salto, mergulho simplificado, contatos contextuais, força e direção; sons sintéticos.
 - IA local com formação 5x1 simplificada, previsão de trajetória e um interceptador designado. Após o saque adversário, o ponteiro recua para receber e o levantador de fundo aguarda o passe antes de infiltrar; o líbero e o ponteiro de fundo cobrem zonas distintas; os três níveis ajustam movimentação e frequência de erros.
@@ -40,7 +40,7 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 
 - A IA implementa uma organização 5x1 básica, não todas as estratégias profissionais. Coberturas, bloqueios, aproximações, faltas de posição do jogador controlado e ajustes finos de cada rotação ainda não são completos.
 - O líbero é selecionável e substitui automaticamente o central de fundo em situações básicas; a lógica de substituição e as restrições ainda são simplificadas. Se o central controlado pelo jogador estiver no fundo, ele permanece em quadra. Quando o central precisa sacar, o líbero sai temporariamente. Faltas de invasão, toque na rede e várias exceções de contato ainda não são verificadas; a regra de ataque de fundo é uma aproximação.
-- Os sprites usam quadros frontais e traseiros do PDF fornecido, com poses de corrida, manchete, levantamento, ataque e mergulho; ainda não há oito direções nem todas as animações solicitadas.
+- Os sprites usam quadros frontais e traseiros, com poses de corrida, manchete, levantamento, ataque e mergulho; ainda não há oito direções nem todas as animações solicitadas.
 - O treino oferece rallies repetidos, sem exercícios individuais nem avaliação de precisão. A dificuldade ainda não altera decisões ou precisão em todos os aspectos previstos.
 - A previsão visual usa a trajetória inicial planejada, mas pode mudar devido a contatos ou colisões; a qualidade do toque não considera todos os fatores de posição e timing. Não há controles de volume separados ou todas as categorias de áudio.
 - A experiência foi projetada para teclado e mouse em desktop; telas pequenas não são o alvo principal.
@@ -51,7 +51,9 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 
 ## Assets e licenças
 
-Os sprites dos jogadores foram extraídos de Sprites_Voleibol.pdf, fornecido pelo usuário; o PDF não informa autoria ou licença dos desenhos. As variações de uniforme foram produzidas a partir desses quadros. O escudo da Atlética de Finanças UFRRJ usado nas bandeiras também foi fornecido pelo usuário. Geometria e efeitos sonoros são gerados pelo código deste projeto. O script scripts/extract_pdf_sprites.py reproduz a extração com pypdf e Pillow. Three.js e Vite são dependências de código aberto; suas licenças acompanham os respectivos pacotes em `node_modules`. As fontes Barlow Condensed e DM Sans são carregadas do Google Fonts e disponibilizadas sob a SIL Open Font License. A aplicação precisa de acesso à rede para carregar essas fontes, mas usa fontes de reserva caso não estejam disponíveis.
+Os sprites individuais dos atletas e do técnico foram fornecidos pelo usuário em Sprites_Volei.zip; o sprite alternativo dos adversários foi extraído de Sprites_Voleibol.pdf, fornecido pelo usuário; o PDF não informa autoria ou licença dos desenhos. As variações de uniforme foram produzidas a partir desses quadros. O escudo da Atlética de Finanças UFRRJ usado nas bandeiras também foi fornecido pelo usuário. Geometria e efeitos sonoros são gerados pelo código deste projeto. O script scripts/extract_pdf_sprites.py reproduz a extração com pypdf e Pillow. Three.js e Vite são dependências de código aberto; suas licenças acompanham os respectivos pacotes em `node_modules`. As fontes Barlow Condensed e DM Sans são carregadas do Google Fonts e disponibilizadas sob a SIL Open Font License. A aplicação precisa de acesso à rede para carregar essas fontes, mas usa fontes de reserva caso não estejam disponíveis.
+
+Os arquivos sem nomes foram associados provisoriamente: `Variante_10` a Ryan, `Variante_11` a GN, `Variante_2` a Fabio e `Variante_levantador` a Bahia. `Variante_3` permanece sem associação.
 
 ## Próximos passos
 
