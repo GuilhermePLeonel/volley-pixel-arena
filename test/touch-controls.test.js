@@ -9,17 +9,17 @@ test('mira móvel prende os dois eixos nas linhas da quadra',()=>{
  assert.deepEqual(courtAim({x:-6,z:2}),{x:-6,z:2});
 });
 
-test('carga usa 70% da duração apenas no controle móvel, inclusive no saque',()=>{
+test('carga móvel chega a 100% em 368 ms no saque e 539 ms durante o rally',()=>{
  const game=new Game({role:'Levantador',quick:true},()=>{});
  assert.equal(game.awaitUserServe,true);
  game.charge={mobile:true};
- assert.equal(game.chargeTime(),525);
+ assert.equal(game.chargeTime(),368);
  game.charge={mobile:false};
  assert.equal(game.chargeTime(),750);
  game.awaitUserServe=false;
  assert.equal(game.chargeTime(),1100);
  game.charge={mobile:true};
- assert.equal(game.chargeTime(),770);
+ assert.equal(game.chargeTime(),539);
 });
 
 test('direcional tem zona morta, limite circular e movimento proporcional',()=>{

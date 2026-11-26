@@ -91,7 +91,7 @@ export class Game{
  planServeShot(target,power,jumping){let b=this.ball,team=this.rules.server;let x=team?Math.min(-.5,target.x):Math.max(.5,target.x);let destination={x,z:target.z,y:.35};let gravity=jumping?16:9.8;let duration=jumping?1.2-.55*power:1.55-.32*power;let fraction=-b.x/(destination.x-b.x);let baseline=b.y+(destination.y-b.y)*fraction;let clearance=(2.83-baseline)/(.5*gravity*fraction*(1-fraction));if(clearance>0)duration=Math.max(duration,Math.sqrt(clearance));return {destination,duration:clamp(duration,.35,2.3),gravity,waypoint:null}}
  chargeTime(){
   const duration=this.awaitUserServe?750:1100;
-  return this.charge?.mobile?Math.round(duration*.7):duration;
+  return this.charge?.mobile?Math.round(duration*.49):duration;
  }
  playerName(player){return player.team===0?athleteById(player.athleteId)?.name:undefined}
  userServe(target,power){if(!this.awaitUserServe||this.ball.live||this.paused||this.rules.over)return false;let jumping=this.controlled.y>.1;this.doServe({target,power:clamp(power,.12,1),jumping});return true}

@@ -156,6 +156,7 @@ test('P1 mantém ponteiro na saída e oposto na entrada na primeira bola e inver
 test('planos do levantador variam por qualidade do passe, disponibilidade e bloqueio',()=>{
  const g=match('Oposto'), own=team(g,0), setter=own[0];
  g.debugSetup(0,1);
+ g.controlled=null;
  g.firstAttackTeam=0;
  for(const p of own){
   const option=attackOption(p,0,true);
@@ -182,6 +183,7 @@ test('levantador alterna atacantes disponíveis e aciona tanto pipe quanto fundo
   for(const rotation of [0,3]){
    const g=match('Oposto'),own=team(g,0),setter=own[0];
    g.debugSetup(rotation,1);
+   g.controlled=null;
    g.firstAttackTeam=0;
    const counts=new Map(),kinds=new Set();
    for(const p of own){
@@ -209,6 +211,26 @@ test('levantador alterna atacantes disponíveis e aciona tanto pipe quanto fundo
    assert.deepEqual(g.recentSetTargets[0],history);
   }
  }finally{Math.random=previousRandom;}
+});
+
+test('levantador escolhe o atleta controlado em 70% das oportunidades de rede e de fundo',()=>{
+ for(const rotation of [0,2]){
+  const g=match('Ponteiro'), own=team(g,0), setter=own[0];
+  g.debugSetup(rotation,1);
+  g.firstAttackTeam=0;
+  for(const player of own){
+   const option=attackOption(player,rotation,true);
+   if(option)Object.assign(player,option.spot);
+  }
+  Object.assign(g.ball,{...settingZone(0),y:2.2});
+  const plays=Array.from({length:100},(_,i)=>selectSetPlay(g,setter,()=>(i+.5)/100));
+  const targeted=plays.filter(play=>play.player===g.controlled);
+  assert.equal(targeted.length,70);
+  assert.ok(targeted.every(play=>rotation===2?play.back:!play.back));
+  assert.ok(new Set(plays.filter(play=>play.player!==g.controlled).map(play=>play.player.id)).size>1);
+  Object.assign(g.controlled,{x:-9.9,z:-5.4});
+  assert.notEqual(selectSetPlay(g,setter,()=>0).player,g.controlled);
+ }
 });
 
 test('faltas de recepção, fundo e líbero respeitam fase e lado do contato',()=>{

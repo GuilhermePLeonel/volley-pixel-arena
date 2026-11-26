@@ -5,6 +5,7 @@ export const botSpeed=game=>game.difficulty==='Fácil'?3.65:game.difficulty==='D
 const local=(team,q)=>orient(team,q.x,q.z);
 const ownHalf=(q,team)=>team?q.x>.15:q.x<-.15;
 const isHuman=(game,p)=>game.controlled===p&&!game.liberoOff;
+const playerSetShare=.7;
 const defensiveSkill={Líbero:1,Ponteiro:.83,Oposto:.57,Central:.44,Levantador:.32};
 
 export function receptionUnit(own,rotation){
@@ -253,18 +254,24 @@ export function selectSetPlay(game,setter,random=Math.random){
   const score=Math.min(.54,available)*1.6-screen*.48+bonus-frequent-repeat;
   return [{...option,player,available,score}];
  }).sort((a,b)=>b.score-a.score);
- const best=attack[0];
+ const controlled=attack.find(option=>isHuman(game,option.player));
+ const sample=controlled?random():null;
+ if(controlled&&sample<playerSetShare)return controlled;
+ const options=controlled?attack.filter(option=>option!==controlled):attack;
+ const best=options[0];
+ if(!best&&controlled)return controlled;
  const tip=orient(team,1.75,-1.75);
  const safe=enemy.every(p=>dist(p,tip)>2.05);
  if(setter.role==='Levantador'&&isFront(setter,rotation)&&quality>.66&&b.y>2.55&&safe&&
   (best?.available??0)<.5)return {kind:'Bola de segunda',tip};
  if(!best)return {kind:'Bola de segurança',safe:orient(team,6.4,0)};
  // Draw from reachable options, with quality and recent use affecting the odds.
- const weights=attack.map(option=>Math.exp((option.score-best.score)*1.7));
- let draw=random()*weights.reduce((sum,weight)=>sum+weight,0);
- for(const [i,option] of attack.entries()){
+ const weights=options.map(option=>Math.exp((option.score-best.score)*1.7));
+ const randomShare=controlled?(sample-playerSetShare)/(1-playerSetShare):random();
+ let draw=randomShare*weights.reduce((sum,weight)=>sum+weight,0);
+ for(const [i,option] of options.entries()){
   draw-=weights[i];
   if(draw<0)return option;
  }
- return attack.at(-1);
+ return options.at(-1);
 }
