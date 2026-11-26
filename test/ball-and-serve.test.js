@@ -75,3 +75,54 @@ test('a formação volta a encarar a rede e o saque usa sua pose própria',()=>{
  assert.ok(g.userServe({x:6,z:0},.7));
  assert.equal(g.controlled.actionPose,'serve');
 });
+
+test('o mesmo toque dá largada no chão, cortada média no ar e impacto máximo no topo',()=>{
+ const resultingSpeed={};
+ for(const phase of ['ground','ascending','peak','descending']){
+  const events=[],g=makeGame('Ponteiro',event=>events.push(event)),p=g.controlled;
+  Object.assign(p,{x:-1.6,z:0});
+  if(phase!=='ground'){
+   g.special();
+   for(let i=0;i<9;i++)g.update(frame);
+   if(phase==='peak'||phase==='descending'){
+    while(p.apexPending)g.update(frame);
+    if(phase==='descending')while(p.apexHold>0)g.update(frame);
+   }
+  }
+  Object.assign(g.ball,{x:p.x,y:2.9,z:p.z,live:true});
+  Object.assign(g.rules,{side:0,touches:2,last:5});
+  g.aim={x:7,z:0};
+  g.hitLock=0;
+  assert.ok(g.userTouch());
+  assert.equal(g.lastHit,phase==='ground'?'Largada':'Ataque');
+  assert.equal(g.ball.comet,phase==='peak');
+  assert.equal(events.includes('impact'),phase==='peak');
+  resultingSpeed[phase]=g.ball.vx;
+ }
+ assert.ok(resultingSpeed.ground<resultingSpeed.ascending);
+ assert.equal(resultingSpeed.ascending,resultingSpeed.descending);
+ assert.ok(resultingSpeed.peak>resultingSpeed.ascending);
+});
+
+test('a janela no topo dura cerca de 160 ms e congela o atleta até a descida',()=>{
+ const g=makeGame(),p=g.controlled;
+ Object.assign(p,{x:-2,z:0});
+ Object.assign(g.ball,{live:true,x:5,y:5,gravity:0,targetTeam:1});
+ g.hitLock=5;
+ g.special();
+ while(p.apexPending)g.update(frame);
+ const peak={x:p.x,y:p.y,z:p.z};
+ const remaining=p.apexHold;
+ assert.ok(remaining>=.16-frame&&remaining<=.16);
+ g.touchMove={x:1,y:0};
+ for(let i=0;i<8;i++){
+  g.update(frame);
+  assert.deepEqual({x:p.x,y:p.y,z:p.z},peak);
+  assert.equal(g.touchStyle().power,1);
+ }
+ g.update(frame);
+ g.update(frame);
+ assert.ok(p.y<peak.y);
+ assert.ok(p.z>peak.z);
+ assert.equal(g.touchStyle().power,.65);
+});

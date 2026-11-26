@@ -7,6 +7,7 @@ import {assignAthletes,athleteById,drawRivalRoster} from './roster.js';
 import {matchTeams} from './teams.js';
 
 const groundHeight=.24;
+const playerJumpHold=.16;
 const spinByTouch={serve:2.5,attack:3.8,block:2.8,set:1.6,pass:1.7};
 
 export class Game{
@@ -17,7 +18,7 @@ export class Game{
   for(const player of this.players){
    if(player.team===1)player.baseAthleteId=this.rivalRoster.lineup[player.index];
   }
-  this.controlled=options.role==='Líbero'?this.players[4]:this.players.find(p=>p.team===0&&p.athleteId===options.athlete)||this.players.find(p=>p.team===0&&p.role===options.role)||this.players[2];this.liberoOff=false;this.ball={x:0,y:1,z:0,vx:0,vy:0,vz:0,live:false};this.aim={x:5,z:0};this.keys={};this.touchMove={x:0,y:0};this.charge=null;this.difficulty=options.difficulty;this.paused=false;this.timer=1.5;this.message='Prepare-se para o saque';this.training=options.training;this.lastHit='';this.hitLock=0;this.clock=0;this.recentSetTargets=[[],[]];this.debugTactics=false;this.serve();}
+  this.controlled=options.role==='Líbero'?this.players[4]:this.players.find(p=>p.team===0&&p.athleteId===options.athlete)||this.players.find(p=>p.team===0&&p.role===options.role)||this.players[2];this.liberoOff=false;this.ball={x:0,y:1,z:0,vx:0,vy:0,vz:0,live:false};this.aim={x:5,z:0};this.keys={};this.touchMove={x:0,y:0};this.touchAiming=false;this.difficulty=options.difficulty;this.paused=false;this.timer=1.5;this.message='Prepare-se para o saque';this.training=options.training;this.lastHit='';this.hitLock=0;this.clock=0;this.recentSetTargets=[[],[]];this.debugTactics=false;this.serve();}
  applyLibero(){
   const players=this.players;
   this.liberoOff=false;
@@ -38,6 +39,7 @@ export class Game{
  serve(){
   this.setTarget=null;this.serveFlight=false;this.flight=null;this.firstAttackTeam=null;
   this.groundBounce=null;
+  this.touchAiming=false;
   this.rallyEnded=false;this.liberoOverhand=false;this.prediction=[];
   this.teamTactics=[{phase:'Pré-saque',entryIndex:0},{phase:'Pré-saque',entryIndex:0}];
   this.applyLibero();
@@ -47,7 +49,7 @@ export class Game{
    const position=serving?servingFormation(player,rotation):receptionFormation(player,rotation);
    const server=serving&&player.index===serverIndex(rotation);
    Object.assign(player,position,{y:0,vy:0,navX:undefined,navZ:undefined,moveVX:0,moveVZ:0,
-    moving:false,action:'idle',actionTime:0,cool:0,jumpRecovery:0,
+    moving:false,apexPending:false,apexHold:0,action:'idle',actionTime:0,cool:0,jumpRecovery:0,
     facing:player.team?Math.PI:0,spriteBack:player.team===0,spriteMirror:false,officialZone:officialZone(player,rotation),
     frontRow:isFront(player,rotation),phase:'Pré-saque',tacticalTarget:{...position},moveTarget:{...position},
     contactPriority:server?1:0,responsibility:server?'Sacar':serving?'Formação de saque':'Formação de recepção'});
@@ -70,7 +72,7 @@ export class Game{
  debugSetup(rotation,server){
   this.rules.rotation=[rotation,rotation];this.rules.server=server;
   this.rules.side=-1;this.rules.touches=0;this.rules.last=null;this.rules.lastTouchTeam=null;
-  this.rules.over=false;this.charge=null;this.lastHit='';this.serve();this.timer=3;
+  this.rules.over=false;this.touchAiming=false;this.lastHit='';this.serve();this.timer=3;
  }
  debugAttack(zone){
   this.debugSetup(this.rules.rotation[0],1);
@@ -89,9 +91,17 @@ export class Game{
   this.message='Simulação · ataque adversário P'+zone;
  }
  planServeShot(target,power,jumping){let b=this.ball,team=this.rules.server;let x=team?Math.min(-.5,target.x):Math.max(.5,target.x);let destination={x,z:target.z,y:.35};let gravity=jumping?16:9.8;let duration=jumping?1.2-.55*power:1.55-.32*power;let fraction=-b.x/(destination.x-b.x);let baseline=b.y+(destination.y-b.y)*fraction;let clearance=(2.83-baseline)/(.5*gravity*fraction*(1-fraction));if(clearance>0)duration=Math.max(duration,Math.sqrt(clearance));return {destination,duration:clamp(duration,.35,2.3),gravity,waypoint:null}}
- chargeTime(){
-  const duration=this.awaitUserServe?750:1100;
-  return this.charge?.mobile?Math.round(duration*.49):duration;
+ touchStyle(){
+  const p=this.controlled;
+  if(p.role==='Líbero'||p.y<=.2)return {power:.25,button:2};
+  return {power:p.apexHold>0?1:.65,button:0};
+ }
+ userTouch(){
+  if(this.paused||this.rules.over||this.liberoOff)return false;
+  const {power,button}=this.touchStyle();
+  if(this.awaitUserServe)return this.userServe(this.aim,power);
+  if(!this.ball.live)return false;
+  return this.contact(this.controlled,this.aim,power,false,null,button);
  }
  playerName(player){return player.team===0?athleteById(player.athleteId)?.name:undefined}
  userServe(target,power){if(!this.awaitUserServe||this.ball.live||this.paused||this.rules.over)return false;let jumping=this.controlled.y>.1;this.doServe({target,power:clamp(power,.12,1),jumping});return true}
@@ -122,8 +132,7 @@ export class Game{
   this.message=manual?(manual.jumping?'Saque viagem':'Saque parado'):'Rally em andamento';
   this.notify('serve');
  }
- shortAttackInvalid(){if(!this.charge||this.awaitUserServe||this.charge.button===2)return false;let p=this.controlled,other=p.team===0?this.aim.x>0:this.aim.x<0;return other&&p.y<=.2&&Math.abs(this.aim.x)<3&&Math.abs(this.aim.z)<=4.5}
- aimValid(){return Math.abs(this.aim.x)<=9&&Math.abs(this.aim.z)<=4.5&&!this.shortAttackInvalid()}
+ aimValid(){return Math.abs(this.aim.x)<=9&&Math.abs(this.aim.z)<=4.5}
  contact(p,target,power,forced=false,intendedId=null,button=0,setPlan=null){
   const b=this.ball;
   if(this.hitLock>0)return false;
@@ -200,8 +209,15 @@ export class Game{
   return (options.find(a=>a.player.id===intendedId)||
    options.sort((a,b)=>dist(a.option.spot,target)-dist(b.option.spot,target))[0])?.player??null;
  }
- planShot(p,target,power,touches,button=0){let b=this.ball;let other=p.team===0?target.x>0:target.x<0;if(touches===3&&!other){target={x:p.team?-5:5,z:target.z};other=true}let jumping=p.y>.2,tip=other&&button===2,blockedAngle=other&&!tip&&!jumping&&Math.abs(target.x)<3;let attack=other&&!tip&&!blockedAngle&&b.y>2.35;let shotKind=other?(attack?'attack':'free'):(touches===1?'pass':'set');let kind=blockedAngle?'Ataque sem ângulo':tip?'Largada':shotKind==='attack'?'Ataque':shotKind==='free'?'Bola enviada':shotKind==='pass'?'Recepção':'Levantamento';let destination={x:target.x,z:target.z,y:other?.3:1.35};let waypoint=null,gravity=shotGravity(shotKind,power),duration;if(blockedAngle){let fraction=-b.x/(destination.x-b.x);waypoint={x:p.team?-.15:.15,y:1.45,z:b.z+(destination.z-b.z)*fraction};gravity=9.8;duration=.38}else{if(attack&&power>=1&&b.x*destination.x<0){let fraction=-b.x/(destination.x-b.x),netY=b.y+(destination.y-b.y)*fraction,netZ=b.z+(destination.z-b.z)*fraction;if(netY<2.86&&Math.abs(netZ)<4.5)waypoint={x:p.team?-.12:.12,y:2.98,z:netZ}}duration=shotDuration(b,waypoint||destination,shotKind,power)}return {other,attack,kind,destination,waypoint,duration,gravity,blockedAngle}}
- previewShot(){if(!this.charge)return null;let target={...this.aim};if(this.charge.button===2&&target.x<.5)target.x=Math.max(1,Math.abs(target.x));let power=clamp((performance.now()-this.charge.start)/this.chargeTime(),.12,1);if(this.awaitUserServe)return this.planServeShot(target,power,this.controlled.y>.1);let touches=this.rules.side===this.controlled.team?this.rules.touches+1:1;return this.planShot(this.controlled,target,power,touches,this.charge.button)} aiHit(p){
+ planShot(p,target,power,touches,button=0){let b=this.ball;let other=p.team===0?target.x>0:target.x<0;if(touches===3&&!other){target={x:p.team?-5:5,z:target.z};other=true}let jumping=p.y>.2,tip=other&&button===2,blockedAngle=other&&!tip&&!jumping&&Math.abs(target.x)<3;let attack=other&&!tip&&!blockedAngle&&(b.y>2.35||jumping&&p===this.controlled);let shotKind=other?(attack?'attack':'free'):(touches===1?'pass':'set');let kind=blockedAngle?'Ataque sem ângulo':tip?'Largada':shotKind==='attack'?'Ataque':shotKind==='free'?'Bola enviada':shotKind==='pass'?'Recepção':'Levantamento';let destination={x:target.x,z:target.z,y:other?.3:1.35};let waypoint=null,gravity=shotGravity(shotKind,power),duration;if(blockedAngle){let fraction=-b.x/(destination.x-b.x);waypoint={x:p.team?-.15:.15,y:1.45,z:b.z+(destination.z-b.z)*fraction};gravity=9.8;duration=.38}else{if(attack&&power>=1&&b.x*destination.x<0){let fraction=-b.x/(destination.x-b.x),netY=b.y+(destination.y-b.y)*fraction,netZ=b.z+(destination.z-b.z)*fraction;if(netY<2.86&&Math.abs(netZ)<4.5)waypoint={x:p.team?-.12:.12,y:2.98,z:netZ}}duration=shotDuration(b,waypoint||destination,shotKind,power)}return {other,attack,kind,destination,waypoint,duration,gravity,blockedAngle}}
+ previewShot(){
+  if(!this.touchAiming||(!this.awaitUserServe&&!this.ball.live))return null;
+  const {power,button}=this.touchStyle();
+  if(this.awaitUserServe)return this.planServeShot(this.aim,power,this.controlled.y>.1);
+  const touches=this.rules.side===this.controlled.team?this.rules.touches+1:1;
+  return this.planShot(this.controlled,this.aim,power,touches,button);
+ }
+ aiHit(p){
   const {rules,ball}=this, team=p.team, n=rules.side===team?rules.touches:0;
   if(n===0){
    const setter=this.players[team*6], ideal=settingZone(team);
@@ -289,8 +305,8 @@ export class Game{
    this.rules.points=[0,0];this.rules.sets=[0,0];this.rules.over=false;this.rules.server=1;
   }
  }
- autoContact(){let p=this.controlled,b=this.ball;if(!p||this.liberoOff||this.charge||!b.live||b.targetTeam!==p.team||b.vy>=0||b.y<.45||b.y>2.65+p.y||dist(p,b)>.78||this.hitLock>0||this.rules.last===p.id)return false;let touches=this.rules.side===p.team?this.rules.touches:0;if(touches>=2)return false;let target={...this.aim},other=p.team===0?target.x>0:target.x<0;if(this.contact(p,target,.45,false,null,other?2:0)){this.message=(other?'Devolução automática':touches===0?'Recepção automática':'Levantamento automático');return true}return false}
- special(){if(this.liberoOff)return;let p=this.controlled;if(p.role!=='Líbero'&&!isFront(p,this.rules.rotation[p.team])&&Math.abs(p.x)<3){this.message='Jogador de fundo: salte atrás da linha de ataque';return}if(p.y===0&&p.cool<=0){p.takeoffX=p.x;p.vy=p.role==='Líbero'?3.2:8.3;p.action=this.awaitUserServe?'serve-ready':p.role==='Líbero'?'Mergulho':'Salto';p.actionPose=this.awaitUserServe?'serve-ready':p.role==='Líbero'?'dive':p.role==='Levantador'?'set':'attack';p.actionTime=.5;p.cool=.35;this.notify('jump')}}
+ autoContact(){let p=this.controlled,b=this.ball;if(!p||this.liberoOff||this.touchAiming||!b.live||b.targetTeam!==p.team||b.vy>=0||b.y<.45||b.y>2.65+p.y||dist(p,b)>.78||this.hitLock>0||this.rules.last===p.id)return false;let touches=this.rules.side===p.team?this.rules.touches:0;if(touches>=2)return false;let target={...this.aim},other=p.team===0?target.x>0:target.x<0;if(this.contact(p,target,.45,false,null,other?2:0)){this.message=(other?'Devolução automática':touches===0?'Recepção automática':'Levantamento automático');return true}return false}
+ special(){if(this.liberoOff)return;let p=this.controlled;if(p.role!=='Líbero'&&!isFront(p,this.rules.rotation[p.team])&&Math.abs(p.x)<3){this.message='Jogador de fundo: salte atrás da linha de ataque';return}if(p.y===0&&p.cool<=0){p.takeoffX=p.x;p.vy=p.role==='Líbero'?3.2:8.3;p.apexPending=p.role!=='Líbero';p.action=this.awaitUserServe?'serve-ready':p.role==='Líbero'?'Mergulho':'Salto';p.actionPose=this.awaitUserServe?'serve-ready':p.role==='Líbero'?'dive':p.role==='Levantador'?'set':'attack';p.actionTime=.5;p.cool=.35;this.notify('jump')}}
  update(dt){
   if(this.paused)return;
   this.clock+=dt;
@@ -303,9 +319,7 @@ export class Game{
    q.cool=Math.max(0,q.cool-dt);
    q.jumpRecovery=Math.max(0,q.jumpRecovery-dt);
    q.actionTime=Math.max(0,(q.actionTime||0)-dt);
-   q.vy-=16*dt;
-   q.y=Math.max(0,q.y+q.vy*dt);
-   if(q.y===0&&q.vy<0)q.vy=0;
+   this.updateJump(q,dt);
   }
   const player=this.controlled;
   if(!ball.live){
@@ -321,7 +335,7 @@ export class Game{
    }
    return;
   }
-  if(player&&!this.liberoOff){
+  if(player&&!this.liberoOff&&player.apexHold<=0){
    let dx=(this.keys.d?1:0)-(this.keys.a?1:0), dz=(this.keys.s?1:0)-(this.keys.w?1:0);
    const keyboard=!!(dx||dz);
    if(!keyboard){dx=this.touchMove.x;dz=this.touchMove.y;}
@@ -340,6 +354,25 @@ export class Game{
   this.autoContact();
   updateAI(this,dt);
   if(ball.live)this.updateBall(dt);
+ }
+ updateJump(player,dt){
+  const gravity=16;
+  if(player.apexHold>0){
+   const held=Math.min(dt,player.apexHold);
+   player.apexHold-=held;
+   dt-=held;
+  }
+  if(player.apexPending&&player.vy<=gravity*dt){
+   const timeToPeak=player.vy/gravity;
+   player.y+=player.vy*timeToPeak-gravity*timeToPeak**2/2;
+   player.vy=0;
+   player.apexPending=false;
+   player.apexHold=playerJumpHold-(dt-timeToPeak);
+   return;
+  }
+  player.vy-=gravity*dt;
+  player.y=Math.max(0,player.y+player.vy*dt);
+  if(player.y===0&&player.vy<0)player.vy=0;
  }
  updateGroundBounce(dt){
   const bounce=this.groundBounce;

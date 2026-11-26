@@ -12,7 +12,7 @@ export function joystickVector(dx,dy,radius,deadZone=.12){
  return {x:dx/distance*magnitude,y:dy/distance*magnitude};
 }
 
-export function installTouchControls({stick,knob,attack,aimKnob,chargeFill,chargeValue,jump,pause,canPlay,move,aim,beginShot,endShot,cancelShot,onJump,onPause}){
+export function installTouchControls({stick,knob,attack,aimKnob,jump,pause,canPlay,move,aim,beginAim,endAim,cancelAim,onJump,onPause}){
  let stickPointer=null,stickOrigin=null;
  let shotPointer=null,shotOrigin=null,shotVector={x:0,y:0},aimApplied=false;
  function clearStick(){
@@ -24,12 +24,6 @@ export function installTouchControls({stick,knob,attack,aimKnob,chargeFill,charg
   shotPointer=null;shotOrigin=null;shotVector={x:0,y:0};aimApplied=false;
   attack.classList.remove('pressed');
   aimKnob.style.transform='translate(-50%,-50%)';
- }
- function setPower(power){
-  power=Math.max(0,Math.min(1,power));
-  chargeFill.style.transform=`translate(-50%,-50%) scale(${.3+power*.7})`;
-  chargeFill.style.background=power>=1?'var(--power-max)':power>=.7?'var(--power-strong)':'var(--accent)';
-  chargeValue.textContent=`${Math.round(power*100)}%`;
  }
  function moveStick(e){
   if(e.pointerId!==stickPointer)return;
@@ -60,7 +54,7 @@ export function installTouchControls({stick,knob,attack,aimKnob,chargeFill,charg
  attack.addEventListener('pointerdown',e=>{
   if(!canPlay()||shotPointer!==null)return;
   e.preventDefault();
-  if(!beginShot())return;
+  if(!beginAim())return;
   shotPointer=e.pointerId;shotOrigin={x:e.clientX,y:e.clientY};
   attack.setPointerCapture(e.pointerId);
   attack.classList.add('pressed');
@@ -74,16 +68,15 @@ export function installTouchControls({stick,knob,attack,aimKnob,chargeFill,charg
  attack.addEventListener('pointerup',e=>{
   if(e.pointerId!==shotPointer)return;
   if(!aimApplied&&(shotVector.x||shotVector.y))aim(shotVector.x,shotVector.y,1/60);
-  clearShot();endShot();setPower(0);
+  clearShot();endAim();
  });
  for(const name of ['pointercancel','lostpointercapture']){
   attack.addEventListener(name,e=>{
    if(e.pointerId!==shotPointer)return;
-   clearShot();cancelShot();setPower(0);
+   clearShot();cancelAim();
   });
  }
  function update(dt){if(shotPointer!==null&&(shotVector.x||shotVector.y)&&canPlay()){aim(shotVector.x,shotVector.y,dt);aimApplied=true}}
- function reset(){clearStick();clearShot();cancelShot();setPower(0)}
- setPower(0);
- return {reset,update,setPower};
+ function reset(){clearStick();clearShot();cancelAim()}
+ return {reset,update};
 }

@@ -8,8 +8,6 @@
  --subtle:#aaa7a4;
  --accent:#ff8a30;
  --accent-hover:#ffac69;
- --power-strong:#ffc587;
- --power-max:#fff0dc;
 }
 
 :focus-visible {outline:2px solid var(--accent);outline-offset:3px}
@@ -19,7 +17,7 @@
  position:absolute;
  inset:0;
  display:grid;
- grid-template-columns:minmax(0,1fr) minmax(130px,190px) minmax(0,1fr);
+ grid-template-columns:repeat(2,minmax(0,1fr));
  grid-template-rows:auto minmax(0,1fr) auto;
  gap:8px 18px;
  padding:0 5% 55px;
@@ -76,11 +74,12 @@
 .match-restart {flex:none;min-height:44px;padding:6px 12px;pointer-events:auto}
 .pause-touch {display:none}
 .player-info {grid-column:1;grid-row:3;align-self:end;display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}
-.mini-label,.power-wrap span {font-size:9px;letter-spacing:.16em;color:var(--subtle);font-weight:700}
+.mini-label {font-size:9px;letter-spacing:.16em;color:var(--subtle);font-weight:700}
 .player-info strong {font:700 26px/1.05 'Barlow Condensed',sans-serif;color:var(--accent)}
 .player-info #hint {font-size:10px;letter-spacing:.08em}
+.hud.apex-ready #hint {color:var(--accent);font-weight:700}
 .bottom-right {
- grid-column:3;
+ grid-column:2;
  grid-row:3;
  display:flex;
  flex-wrap:wrap;
@@ -93,12 +92,7 @@
 }
 .bottom-right span {white-space:nowrap}
 kbd {display:inline-block;border:1px solid #ffffff66;padding:4px;color:#fff;font:inherit}
-.power-wrap {grid-column:2;grid-row:3;align-self:end}
-.power-wrap>div:first-child {display:flex;justify-content:space-between;align-items:center}
-.power-wrap b {font-size:11px;color:var(--accent)}
-.power-track {height:5px;background:#ffffff33;margin-top:8px}
-.power-track div {height:100%;width:0;background:var(--accent)}
-.hud.is-ended :is(.mobile-controls,.power-wrap,.bottom-right,#hint) {display:none}
+.hud.is-ended :is(.mobile-controls,.bottom-right,#hint) {display:none}
 body:has(.menu.hidden) .topbar {border-bottom:0}
 body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
 @media (max-width:950px) {
@@ -149,7 +143,7 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
  .player-info strong {font-size:18px}
  .player-info #hint {font-size:9px}
  .mini-label {font-size:8px}
- .power-wrap,.bottom-right {display:none}
+ .bottom-right {display:none}
  .mobile-controls {
   --move-size:clamp(72px,28vw,110px);
   --attack-size:clamp(68px,26vw,104px);
@@ -191,9 +185,10 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
  .touch-button:active,.touch-button.pressed {background:var(--accent);color:var(--page)}
  .attack-touch {width:var(--attack-size);height:var(--attack-size);border-radius:50%;background:#161616ed;border-color:#ffffffae;overflow:hidden}
  .attack-touch:active,.attack-touch.pressed {background:#121212f2;color:#fff}
- .charge-fill {position:absolute;left:50%;top:50%;width:96%;height:96%;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%) scale(.3);pointer-events:none}
- .aim-knob {position:absolute;left:50%;top:50%;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid #fff9;background:#2d2d2d;transform:translate(-50%,-50%);box-shadow:0 2px 8px #0005;pointer-events:none}
- .touch-button .aim-knob span {font-size:10px;color:#fff;font-weight:800}
+ .aim-knob {position:absolute;left:50%;top:50%;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;border:2px solid #fff9;background:#2d2d2d;transform:translate(-50%,-50%);box-shadow:0 2px 8px #0005;pointer-events:none}
+ .touch-button .aim-knob span {font-size:9px;color:#fff;font-weight:800}
+ .hud.apex-ready .aim-knob {background:var(--accent);border-color:#fff}
+ .hud.apex-ready .aim-knob span {color:var(--page)}
  .jump-touch {width:var(--jump-size);height:var(--jump-size);border-radius:50%;font-size:9px}
  .pause-touch {
   grid-area:pause;

@@ -9,19 +9,6 @@ test('mira móvel prende os dois eixos nas linhas da quadra',()=>{
  assert.deepEqual(courtAim({x:-6,z:2}),{x:-6,z:2});
 });
 
-test('carga móvel chega a 100% em 368 ms no saque e 539 ms durante o rally',()=>{
- const game=new Game({role:'Levantador',quick:true},()=>{});
- assert.equal(game.awaitUserServe,true);
- game.charge={mobile:true};
- assert.equal(game.chargeTime(),368);
- game.charge={mobile:false};
- assert.equal(game.chargeTime(),750);
- game.awaitUserServe=false;
- assert.equal(game.chargeTime(),1100);
- game.charge={mobile:true};
- assert.equal(game.chargeTime(),539);
-});
-
 test('direcional tem zona morta, limite circular e movimento proporcional',()=>{
  assert.deepEqual(joystickVector(4,0,50),{x:0,y:0});
  const middle=joystickVector(25,0,50),edge=joystickVector(100,100,50);
@@ -35,12 +22,12 @@ function element(){
  return {style:{},classList:{add(){},remove(){}},addEventListener(type,fn){(listeners[type]??=[]).push(fn)},setPointerCapture(){},getBoundingClientRect(){return {left:0,top:0,width:100,height:100}},emit(type,values={}){for(const fn of listeners[type]||[])fn({pointerId:1,clientX:50,clientY:50,button:0,detail:1,preventDefault(){},...values})}};
 }
 test('analógico responde a arrastes pequenos e apenas o botão separado pula',()=>{
- const stick=element(),knob=element(),attack=element(),aimKnob=element(),chargeFill=element(),chargeValue=element(),jump=element(),pause=element();
+ const stick=element(),knob=element(),attack=element(),aimKnob=element(),jump=element(),pause=element();
  const moves=[],jumps=[];
  let active=true;
- installTouchControls({stick,knob,attack,aimKnob,chargeFill,chargeValue,jump,pause,
-  canPlay:()=>active,move:(x,y)=>moves.push([x,y]),aim:()=>{},beginShot:()=>true,endShot:()=>{},
-  cancelShot:()=>{},onJump:()=>jumps.push('jump'),onPause:()=>{}});
+ installTouchControls({stick,knob,attack,aimKnob,jump,pause,
+  canPlay:()=>active,move:(x,y)=>moves.push([x,y]),aim:()=>{},beginAim:()=>true,endAim:()=>{},
+  cancelAim:()=>{},onJump:()=>jumps.push('jump'),onPause:()=>{}});
  stick.emit('pointerdown');stick.emit('pointerup');
  assert.equal(jumps.length,0);
  stick.emit('pointerdown');
@@ -59,23 +46,20 @@ test('analógico responde a arrastes pequenos e apenas o botão separado pula',(
  assert.equal(jumps.length,2);
 });
 
-test('movimento, pulo e mira podem ocorrer enquanto o toque carrega',()=>{
- const stick=element(),knob=element(),attack=element(),aimKnob=element(),chargeFill=element(),chargeValue=element(),jump=element(),pause=element();
+test('movimento, pulo e mira podem ocorrer antes de soltar para tocar',()=>{
+ const stick=element(),knob=element(),attack=element(),aimKnob=element(),jump=element(),pause=element();
  const moves=[],aims=[],actions=[];
- const controls=installTouchControls({stick,knob,attack,aimKnob,chargeFill,chargeValue,jump,pause,
-  canPlay:()=>true,move:(x,y)=>moves.push([x,y]),aim:(x,y,dt)=>aims.push([x,y,dt]),beginShot:()=>(actions.push('begin'),true),
-  endShot:()=>actions.push('end'),cancelShot:()=>actions.push('cancel'),onJump:()=>actions.push('jump'),onPause:()=>actions.push('pause')});
+ const controls=installTouchControls({stick,knob,attack,aimKnob,jump,pause,
+  canPlay:()=>true,move:(x,y)=>moves.push([x,y]),aim:(x,y,dt)=>aims.push([x,y,dt]),beginAim:()=>(actions.push('begin'),true),
+  endAim:()=>actions.push('end'),cancelAim:()=>actions.push('cancel'),onJump:()=>actions.push('jump'),onPause:()=>actions.push('pause')});
  stick.emit('pointerdown',{pointerId:1,clientX:50});stick.emit('pointermove',{pointerId:1,clientX:90});
  attack.emit('pointerdown',{pointerId:2,clientX:300,clientY:600});
  attack.emit('pointermove',{pointerId:2,clientX:320,clientY:600});controls.update(.1);
  assert.ok(moves.at(-1)[0]>0);assert.ok(aims.at(-1)[0]>.8);assert.equal(aims.at(-1)[1],0);assert.equal(aims.at(-1)[2],.1);
- controls.setPower(.7);assert.equal(chargeValue.textContent,'70%');assert.notEqual(chargeFill.style.transform,'translate(-50%,-50%) scale(0.3)');
  jump.emit('pointerdown',{pointerId:3});
  assert.deepEqual(actions,['begin','jump']);
- assert.equal(chargeValue.textContent,'70%');
  assert.ok(moves.at(-1)[0]>0);
- controls.setPower(1);assert.equal(chargeValue.textContent,'100%');assert.equal(chargeFill.style.transform,'translate(-50%,-50%) scale(1)');
- attack.emit('pointerup',{pointerId:2,clientX:320,clientY:600});assert.equal(chargeValue.textContent,'0%');
+ attack.emit('pointerup',{pointerId:2,clientX:320,clientY:600});
  assert.deepEqual(actions,['begin','jump','end']);
  stick.emit('pointerup',{pointerId:1});assert.deepEqual(moves.at(-1),[0,0]);
  attack.emit('pointerdown',{pointerId:4});attack.emit('pointercancel',{pointerId:4});

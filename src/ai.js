@@ -113,7 +113,7 @@ export function updateAI(game,dt){
   const assigned=game.setTarget?.team===team&&rules.side===team&&rules.touches===2?game.setTarget.playerId:null;
   const human=own.find(p=>p===game.controlled&&!game.liberoOff);
   const touches=rules.side===team?rules.touches:0;
-  const humanReady=!!human&&!game.charge&&touches<2&&path.some((q,i)=>
+  const humanReady=!!human&&!game.touchAiming&&touches<2&&path.some((q,i)=>
    i>0&&q.t<=.3&&q.y<path[i-1].y&&q.y<2.55&&q.y>.5&&dist(human,q)<.6);
   const eligible=own.filter(p=>assigned!==null?p.id===assigned:p!==human||humanReady);
   const flight=game.flight;
