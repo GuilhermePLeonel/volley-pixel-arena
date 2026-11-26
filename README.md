@@ -29,6 +29,7 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 
 - Quadra low-poly em Three.js com proporção regulamentar de 18 × 9, projeção visual mais larga e câmera em perspectiva que acompanha a bola suavemente. Rede, antenas, sombras e 12 jogadores com sprites do PDF fornecido pelo usuário.
 - Arquibancadas com torcedores animados em laranja e preto e bandeiras com o escudo fornecido pelo usuário.
+- Seleção de atletas por posição, com retratos da referência fornecida, tons de pele e uniforme claro para os líberos. Jefferson aparece como técnico da equipe.
 - Bola com gravidade e trajetórias balísticas, rede, antenas, piso, limite da quadra, mira no chão, indicação de alvo e arco aproximado.
 - Jogador selecionável, movimento, corrida, salto, mergulho simplificado, contatos contextuais, força e direção; sons sintéticos.
 - IA local com formação 5x1 simplificada, previsão de trajetória e um interceptador designado. Após o saque adversário, o ponteiro recua para receber e o levantador de fundo aguarda o passe antes de infiltrar; o líbero e o ponteiro de fundo cobrem zonas distintas; os três níveis ajustam movimentação e frequência de erros.
