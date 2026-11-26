@@ -5,6 +5,10 @@ import {attackOption,isFront,legalReception,officialZone,orient,receptionFormati
 import {selectSetPlay} from './tactical-play.js';
 import {assignAthletes,athleteById,drawRivalRoster} from './roster.js';
 import {matchTeams} from './teams.js';
+
+const groundHeight=.24;
+const spinByTouch={serve:2.5,attack:3.8,block:2.8,set:1.6,pass:1.7};
+
 export class Game{
  constructor(options,notify){this.options=options;this.notify=notify;this.rules=new Rules(options.quick);this.players=makePlayers();
   this.teams=matchTeams(options.rivalTeam);
@@ -33,6 +37,7 @@ export class Game{
  }
  serve(){
   this.setTarget=null;this.serveFlight=false;this.flight=null;this.firstAttackTeam=null;
+  this.groundBounce=null;
   this.rallyEnded=false;this.liberoOverhand=false;this.prediction=[];
   this.teamTactics=[{phase:'Pré-saque',entryIndex:0},{phase:'Pré-saque',entryIndex:0}];
   this.applyLibero();
@@ -42,13 +47,15 @@ export class Game{
    const position=serving?servingFormation(player,rotation):receptionFormation(player,rotation);
    const server=serving&&player.index===serverIndex(rotation);
    Object.assign(player,position,{y:0,vy:0,navX:undefined,navZ:undefined,moveVX:0,moveVZ:0,
-    moving:false,action:'idle',actionTime:0,cool:0,jumpRecovery:0,officialZone:officialZone(player,rotation),
+    moving:false,action:'idle',actionTime:0,cool:0,jumpRecovery:0,
+    facing:player.team?Math.PI:0,spriteBack:player.team===0,spriteMirror:false,officialZone:officialZone(player,rotation),
     frontRow:isFront(player,rotation),phase:'Pré-saque',tacticalTarget:{...position},moveTarget:{...position},
     contactPriority:server?1:0,responsibility:server?'Sacar':serving?'Formação de saque':'Formação de recepção'});
   }
   const server=this.players[team*6+serverIndex(this.rules.rotation[team])];
+  server.action='serve-ready';
   Object.assign(this.ball,{x:server.x,z:server.z,y:1.8,vx:0,vy:0,vz:0,live:false,comet:false,pendingFault:null,
-   assistTarget:null,targetTeam:1-team});
+   assistTarget:null,targetTeam:1-team,angle:0,spin:0,spinDirection:1});
   this.awaitUserServe=server===this.controlled&&!this.liberoOff;
   this.timer=1.5;
   this.message=this.awaitUserServe?'Seu saque · clique ou salte para sacar':team===0?'Seu time vai sacar':'Saque adversário';
@@ -56,6 +63,8 @@ export class Game{
  }
  trackFlight(kind,p,target){
   const b=this.ball;
+  b.spinDirection*=-1;
+  b.spin=b.spinDirection*(spinByTouch[kind]??1.4);
   this.flight={kind,team:p.team,playerId:p.id,started:this.clock,origin:{x:b.x,y:b.y,z:b.z},target:{...target}};
  }
  debugSetup(rotation,server){
@@ -99,7 +108,7 @@ export class Game{
   if(!onCourt){this.point(receiving,'Jogador fora da quadra no saque');return;}
   Object.assign(b,{x:server.x,z:server.z,y:1.8+(manual?server.y:0),
    pendingFault:null,assistTarget:null,comet:false,targetTeam:receiving});
-  server.actionPose='attack';server.actionTime=.55;
+  server.action='serve';server.actionPose='serve';server.actionTime=.55;
   this.awaitUserServe=false;this.serveFlight=true;this.firstAttackTeam=receiving;this.hitLock=.25;
   Object.assign(this.rules,{side:team,touches:1,last:server.id,lastTouchTeam:team});
   let shot;
@@ -262,6 +271,7 @@ export class Game{
  point(team,reason){
   if(!this.ball.live)return;
   this.ball.live=false;this.ball.comet=false;this.awaitUserServe=false;
+  if(!this.groundBounce)this.ball.spin=0;
   this.setTarget=null;this.rallyEnded=true;
   this.rules.point(team);
   for(const state of this.teamTactics){
@@ -280,11 +290,15 @@ export class Game{
   }
  }
  autoContact(){let p=this.controlled,b=this.ball;if(!p||this.liberoOff||this.charge||!b.live||b.targetTeam!==p.team||b.vy>=0||b.y<.45||b.y>2.65+p.y||dist(p,b)>.78||this.hitLock>0||this.rules.last===p.id)return false;let touches=this.rules.side===p.team?this.rules.touches:0;if(touches>=2)return false;let target={...this.aim},other=p.team===0?target.x>0:target.x<0;if(this.contact(p,target,.45,false,null,other?2:0)){this.message=(other?'Devolução automática':touches===0?'Recepção automática':'Levantamento automático');return true}return false}
- special(){if(this.liberoOff)return;let p=this.controlled;if(p.role!=='Líbero'&&!isFront(p,this.rules.rotation[p.team])&&Math.abs(p.x)<3){this.message='Jogador de fundo: salte atrás da linha de ataque';return}if(p.y===0&&p.cool<=0){p.takeoffX=p.x;p.vy=p.role==='Líbero'?3.2:8.3;p.action=p.role==='Líbero'?'Mergulho':'Salto';p.actionPose=p.role==='Líbero'?'dive':p.role==='Levantador'?'set':'attack';p.actionTime=.5;p.cool=.35;this.notify('jump')}}
+ special(){if(this.liberoOff)return;let p=this.controlled;if(p.role!=='Líbero'&&!isFront(p,this.rules.rotation[p.team])&&Math.abs(p.x)<3){this.message='Jogador de fundo: salte atrás da linha de ataque';return}if(p.y===0&&p.cool<=0){p.takeoffX=p.x;p.vy=p.role==='Líbero'?3.2:8.3;p.action=this.awaitUserServe?'serve-ready':p.role==='Líbero'?'Mergulho':'Salto';p.actionPose=this.awaitUserServe?'serve-ready':p.role==='Líbero'?'dive':p.role==='Levantador'?'set':'attack';p.actionTime=.5;p.cool=.35;this.notify('jump')}}
  update(dt){
   if(this.paused)return;
   this.clock+=dt;
   this.hitLock=Math.max(0,this.hitLock-dt);
+  const ball=this.ball;
+  const spin=Math.sign(ball.spin)*Math.max(0,Math.abs(ball.spin)-dt*2.8);
+  ball.angle+=(ball.spin+spin)*.5*dt;
+  ball.spin=spin;
   for(const q of this.players){
    q.cool=Math.max(0,q.cool-dt);
    q.jumpRecovery=Math.max(0,q.jumpRecovery-dt);
@@ -294,9 +308,10 @@ export class Game{
    if(q.y===0&&q.vy<0)q.vy=0;
   }
   const player=this.controlled;
-  if(!this.ball.live){
+  if(!ball.live){
+   this.updateGroundBounce(dt);
    if(this.awaitUserServe){
-    this.ball.y=1.8+player.y;
+    ball.y=1.8+player.y;
     return;
    }
    this.timer-=dt;
@@ -324,7 +339,25 @@ export class Game{
   }
   this.autoContact();
   updateAI(this,dt);
-  if(this.ball.live)this.updateBall(dt);
+  if(ball.live)this.updateBall(dt);
+ }
+ updateGroundBounce(dt){
+  const bounce=this.groundBounce;
+  if(!bounce)return;
+  stepBall(bounce,dt);
+  const ball=this.ball;
+  ball.x=bounce.x;ball.z=bounce.z;
+  ball.y=Math.max(groundHeight,bounce.y);
+  if(bounce.y>groundHeight)return;
+  bounce.remaining--;
+  if(!bounce.remaining){
+   this.groundBounce=null;
+   ball.spin=0;
+   return;
+  }
+  bounce.y=groundHeight;
+  bounce.vy=Math.max(.55,-bounce.vy*.52);
+  bounce.vx*=.55;bounce.vz*=.55;
  }
  updateBall(dt){
   const b=this.ball,oldX=b.x,oldY=b.y,oldZ=b.z;
@@ -359,8 +392,11 @@ export class Game{
     }
    }
   }
-  if(b.y<=.24){
-   b.y=.24;
+  if(b.y<=groundHeight){
+   b.y=groundHeight;
+   const drift=Math.min(.28,3.4/(Math.hypot(b.vx,b.vz)||1));
+   this.groundBounce={x:b.x,y:b.y,z:b.z,vx:b.vx*drift,vz:b.vz*drift,
+    vy:clamp(-b.vy*.34,1.55,3.35),gravity:12,remaining:3};
    const inside=Math.abs(b.x)<=9&&Math.abs(b.z)<=4.5;
    const winner=inside?(b.x<0?1:0):(this.rules.lastTouchTeam===null?0:1-this.rules.lastTouchTeam);
    this.point(winner,inside?'Bola no chão':'Bola fora');
