@@ -25,6 +25,8 @@ O diretório `dist/` contém os arquivos estáticos. A configuração de GitHub 
 
 Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em relação à câmera; Shift corre; Espaço salta (ou realiza um mergulho curto como líbero). Mova o mouse sobre a quadra para mirar. Segure e solte o botão esquerdo para tocar; o direito realiza uma largada precisa para o lado adversário. A barra mostra a força: ataques ganham velocidade a partir de 70%; com 100% de carga, a cortada segue rapidamente até o alvo, acompanhada de um rastro de cometa e som e efeito de explosão. Em contatos baixos, uma assistência direciona a bola por cima da rede e então ao alvo, em dois trechos retos. Um círculo verde marca a região do levantamento e o rótulo identifica o atacante escolhido; os bots respeitam o destinatário, mas o usuário pode intervir. Para atacar de botão esquerdo sem saltar, mire além da linha de três metros adversária; se mirar mais curto a bola vai à rede e poderá ser recuperada nos dois primeiros toques. No terceiro toque, isso dá ponto ao adversário. Saltando, é possível atacar em toda a quadra; o botão direito permite largadas curtas sem salto. Nos dois primeiros contatos, se a bola estiver caindo ao alcance do seu jogador, ele faz automaticamente uma recepção ou levantamento na direção do mouse. O contato automático não ocorre durante o carregamento de uma ação nem no terceiro toque, que é manual e prioriza enviar a bola ao outro lado. Esc pausa e permite reiniciar. Quando for sua vez de sacar, clique para sacar parado ou salte com Espaço e segure o mouse para o saque viagem. Os saques dos demais atletas são automáticos, atrás da linha de fundo. Na recepção, o jogador controlado se reposiciona quando WASD não está pressionado; o movimento manual tem prioridade.
 
+No celular, use o direcional à esquerda para se mover e o botão PULAR para saltar ou mergulhar. À direita, segure TOCAR ou LARGADA para carregar o toque, arraste o dedo sobre a quadra para mirar e solte para executar; também é possível tocar na quadra para ajustar a mira antes da jogada. Use o botão de pausa no alto da tela. Os controles funcionam simultaneamente com dedos diferentes, tanto na vertical quanto na horizontal.
+
 ## Implementado
 
 - Quadra low-poly em Three.js com proporção regulamentar de 18 × 9, projeção visual mais larga e câmera em perspectiva que acompanha a bola suavemente. Rede, antenas, sombras e 12 jogadores com sprites fornecidos pelo usuário.
@@ -32,6 +34,7 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 - Seleção de atletas por posição, com retratos e sprites individuais fornecidos pelo usuário; os líberos usam uniforme claro e Jefferson acompanha o jogo como técnico ao lado da quadra.
 - Bola com gravidade e trajetórias balísticas, rede, antenas, piso, limite da quadra, mira no chão, indicação de alvo e arco aproximado.
 - Jogador selecionável, movimento, corrida, salto, mergulho simplificado, contatos contextuais, força e direção; sons sintéticos.
+- Interface adaptável para celular, com direcional analógico, salto, força e mira por gestos multitoque.
 - IA local com formação 5x1 simplificada, previsão de trajetória e um interceptador designado. Após o saque adversário, o ponteiro recua para receber e o levantador de fundo aguarda o passe antes de infiltrar; o líbero e o ponteiro de fundo cobrem zonas distintas; os três níveis ajustam movimentação e frequência de erros.
 - Rally point, contagem de toques, dois toques consecutivos, pontuação dentro/fora, sequência de saque e seis rotações. Há verificação simplificada de ataque do fundo e do líbero acima da rede; set rápido até 7 ou melhor de cinco até 25 (tie-break até 15), com diferença de dois.
 - Treino contínuo básico, pausa e reinício. Física e placar possuem testes automatizados.
@@ -43,7 +46,7 @@ Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em rel
 - Os sprites usam quadros frontais e traseiros, com poses de corrida, manchete, levantamento, ataque e mergulho; ainda não há oito direções nem todas as animações solicitadas.
 - O treino oferece rallies repetidos, sem exercícios individuais nem avaliação de precisão. A dificuldade ainda não altera decisões ou precisão em todos os aspectos previstos.
 - A previsão visual usa a trajetória inicial planejada, mas pode mudar devido a contatos ou colisões; a qualidade do toque não considera todos os fatores de posição e timing. Não há controles de volume separados ou todas as categorias de áudio.
-- A experiência foi projetada para teclado e mouse em desktop; telas pequenas não são o alvo principal.
+- O desempenho e a precisão dos controles por toque podem variar entre aparelhos e navegadores móveis.
 
 ## Arquitetura
 
