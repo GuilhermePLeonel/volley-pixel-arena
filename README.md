@@ -23,7 +23,7 @@ O diretório `dist/` contém os arquivos estáticos. A configuração de GitHub 
 
 ## Como jogar
 
-Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em relação à câmera; Shift corre; Espaço salta (ou realiza um mergulho curto como líbero). Mova o mouse sobre a quadra para mirar. Segure e solte o botão esquerdo para tocar; o direito direciona a bola para o lado adversário. A barra mostra a força: ataques ganham velocidade a partir de 70% e um efeito de impacto aparece com 100% de carga. O terceiro toque é enviado ao outro lado. Esc pausa e permite reiniciar. O saque é automático e realizado atrás da linha de fundo. Na recepção, o jogador controlado se reposiciona quando WASD não está pressionado; o movimento manual tem prioridade.
+Escolha posição e dificuldade e inicie uma partida ou treino. WASD move em relação à câmera; Shift corre; Espaço salta (ou realiza um mergulho curto como líbero). Mova o mouse sobre a quadra para mirar. Segure e solte o botão esquerdo para tocar; o direito direciona a bola para o lado adversário. A barra mostra a força: ataques ganham velocidade a partir de 70%; com 100% de carga, a cortada segue uma linha reta muito rápida até o alvo e mostra um efeito de impacto. Ela ainda pode bater na rede se for executada de uma posição baixa. Um círculo verde marca a região do levantamento e o rótulo identifica o atacante escolhido; os bots respeitam o destinatário, mas o usuário pode intervir. O terceiro toque é enviado ao outro lado. Esc pausa e permite reiniciar. O saque é automático e realizado atrás da linha de fundo. Na recepção, o jogador controlado se reposiciona quando WASD não está pressionado; o movimento manual tem prioridade.
 
 ## Implementado
 
@@ -60,6 +60,7 @@ Priorizar testes de jogabilidade com pessoas, melhorar interceptação e timing,
 ## Referência de regras
 
 A formação de recepção preserva a ordem relativa até o saque; a equipe sacadora pode se organizar livremente, conforme as [regras oficiais FIVB 2025–2028](https://www.fivb.com/wp-content/uploads/2025/01/FIVB-Volleyball_Rules2025_2028-EN-v05.pdf), seção 7.4. A implementação ainda não verifica todos os detalhes de posicionamento do jogador humano.
+
 
 
 
