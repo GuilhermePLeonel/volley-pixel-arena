@@ -5,16 +5,13 @@ export const career = [
  {rivalTeam:'unissuam',difficulty:'Muito difícil'},
 ];
 
+export const isQuickMatch=(mode,quick)=>mode==='match'&&quick;
+
 export function matchProgress(progress,{won,mode,quick}){
- if(mode==='training')return progress;
- const next={...progress};
- if(mode==='career'&&won)next.stage=Math.min(career.length,next.stage+1);
- if(won)next.xandao=false;
- if(mode==='match'&&quick){
-  next.losses=won?0:Math.min(3,next.losses+1);
-  if(!won&&next.losses===3)next.xandao=true;
- }else if(won){
-  next.losses=0;
+ if(mode==='career'&&won){
+  return {...progress,stage:Math.min(career.length,progress.stage+1)};
  }
- return next;
+ if(!isQuickMatch(mode,quick))return progress;
+ const losses=won?0:Math.min(3,progress.losses+1);
+ return {...progress,losses,xandao:!won&&(progress.xandao||losses===3)};
 }

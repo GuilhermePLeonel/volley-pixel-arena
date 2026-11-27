@@ -15,7 +15,7 @@ test('a carreira avança apenas com vitórias e termina após Unissuam',()=>{
  assert.equal(matchProgress(progress,win).stage,career.length);
 });
 
-test('Xandão assume na terceira derrota rápida e sai após uma vitória em partida',()=>{
+test('Xandão assume na terceira derrota rápida e sai após uma vitória rápida',()=>{
  const loss={won:false,mode:'match',quick:true};
  let progress={stage:0,losses:0,xandao:false};
  for(let streak=1;streak<=3;streak++){
@@ -26,5 +26,7 @@ test('Xandão assume na terceira derrota rápida e sai após uma vitória em par
   assert.equal(progress.xandao,streak===3);
  }
  assert.equal(matchProgress(progress,{...loss,mode:'training',won:true}),progress);
- assert.deepEqual(matchProgress(progress,{...loss,quick:false,won:true}),{stage:0,losses:0,xandao:false});
+ assert.equal(matchProgress(progress,{...loss,quick:false,won:true}),progress);
+ assert.deepEqual(matchProgress(progress,{...loss,mode:'career',won:true}),{stage:1,losses:3,xandao:true});
+ assert.deepEqual(matchProgress(progress,{...loss,won:true}),{stage:0,losses:0,xandao:false});
 });

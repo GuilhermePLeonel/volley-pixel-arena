@@ -1,5 +1,7 @@
-import {career,matchProgress} from './progression.js';
+import {career,isQuickMatch,matchProgress} from './progression.js';
 import xandaoPortrait from './assets/xandao-retrato.png';
+import xandaoDeparture from './assets/xandao-despedida.png';
+import petition from './assets/xandao-abaixo-assinado.png';
 import './style.css';
 import {Game} from './game.js';
 import {rotations} from './tactics.js';
@@ -57,7 +59,7 @@ app.innerHTML=`<div id="stage"></div><div class="grain"></div><header class="top
  <button id="resultNext" class="primary"></button><button id="resultBack" class="textbtn">VOLTAR AO MENU</button>
 </div></div>`;
 let game=new Game({role:'Ponteiro',difficulty:'Normal',quick:true,training:false},()=>{});let view=new View(document.querySelector('#stage'),game.players);let active=false, audio=null;
-function sound(type,position){if(type==='point')view.showCoachReaction(position?.team);if(type==='impact'){view.showImpact(position);if(audio)playExplosion(audio);return}if(!audio)return;let o=audio.createOscillator(),g=audio.createGain();let f={hit:190,pass:300,serve:240,point:520,whistle:900,net:120,jump:200,block:145}[type]||200;o.type=type==='whistle'?'sine':'triangle';o.frequency.setValueAtTime(f,audio.currentTime);o.frequency.exponentialRampToValueAtTime(f*.65,audio.currentTime+.12);g.gain.setValueAtTime(.025,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.13);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+.14)}
+function sound(type,position){if(type==='point')view.showCoachReaction(position?.team,game.xandao);if(type==='impact'){view.showImpact(position);if(audio)playExplosion(audio);return}if(!audio)return;let o=audio.createOscillator(),g=audio.createGain();let f={hit:190,pass:300,serve:240,point:520,whistle:900,net:120,jump:200,block:145}[type]||200;o.type=type==='whistle'?'sine':'triangle';o.frequency.setValueAtTime(f,audio.currentTime);o.frequency.exponentialRampToValueAtTime(f*.65,audio.currentTime+.12);g.gain.setValueAtTime(.025,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.13);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+.14)}
 const $=id=>document.getElementById(id);
 const progressKey='volley-rino-progress-v1';
 let saved;
@@ -70,10 +72,14 @@ let progress={
 let mode='match',warmup=0,resultHandled=false;
 function saveProgress(){
  try{localStorage.setItem(progressKey,JSON.stringify(progress));}catch{}
- $('coachName').textContent=progress.xandao?'TÉCNICO · XANDÃO':'TÉCNICO · JEFFERSON';
+ updateCoachName();
  $('career').textContent=progress.stage===career.length?'PÓDIO':progress.stage?'CONTINUAR CARREIRA':'CARREIRA';
 }
+function updateCoachName(){
+ $('coachName').textContent=progress.xandao&&$('quick').checked?'TÉCNICO · XANDÃO':'TÉCNICO · JEFFERSON';
+}
 saveProgress();
+$('quick').addEventListener('change',updateCoachName);
 function showResult(title,content,label,next){
  $('resultTitle').textContent=title;
  $('resultContent').innerHTML=content;
@@ -106,6 +112,13 @@ function finishMatch(){
   showResult('VOCÊ DESBLOQUEOU UM NOVO TÉCNICO',`<img class="unlock-portrait" src="${xandaoPortrait}" alt="Retrato pixelado do Xandão">
    <strong class="unlock-name">Lendário treinador XANDÃAAAO</strong>
    <p>Após uma sequência de derrotas, volte às suas origens e treine fundamento incessantemente para que possa reaprender a jogar vôlei.</p>`,'JOGAR DE NOVO',()=>start('match'));
+ }else if(previous.xandao&&!progress.xandao){
+  game.xandao=false;
+  showResult('JEFFERSON ESTÁ DE VOLTA',`<p>Agora o time já é digno de buscar outros horizontes.</p>
+   <div class="farewell-art">
+    <img src="${petition}" alt="Abaixo-assinado fictício pela saída do Xandão">
+    <img src="${xandaoDeparture}" alt="Xandão indo embora da quadra, triste e com a cabeça baixa">
+   </div>`,'JOGAR DE NOVO',()=>start('match'));
  }else if(mode==='career'){
   if(progress.stage===career.length){showPodium();return;}
   const next=opponents.find(team=>team.id===career[progress.stage].rivalTeam);
@@ -161,8 +174,8 @@ function start(nextMode){
  audio.resume();
  game=new Game({role:$('role').value,athlete:$('athlete').value,difficulty:stage?.difficulty??$('difficulty').value,
   quick:stage?true:$('quick').checked,training,rivalTeam:stage?.rivalTeam??$('rivalTeam').value},sound);
- game.xandao=progress.xandao;
- warmup=game.xandao&&!training?10:0;
+ game.xandao=progress.xandao&&isQuickMatch(mode,game.rules.quick);
+ warmup=game.xandao?10:0;
  view.resetMatchArt();
  showMatchTeams(game.teams);
  if(training){game.rules.server=1;game.serve();}
@@ -182,6 +195,7 @@ $('restart').onclick=$('playAgain').onclick=()=>start(mode);
 $('back').onclick=$('resultBack').onclick=()=>{
  touch.reset();
  active=false;
+ game.xandao=false;
  warmup=0;
  $('result').classList.add('hidden');
  tactics.sync();

@@ -65,8 +65,8 @@ export class View{
   this.scene.add(sprite);
   return {sprite,reaction:0};
  }
- showCoachReaction(side){
-  if(this.coaches[side])this.coaches[side].reaction=1.7;
+ showCoachReaction(side,xandao){
+  if(this.coaches[side])this.coaches[side].reaction=side===1&&xandao?2.3:1.7;
  }
  resetMatchArt(){
   for(const coach of this.coaches)coach.reaction=0;
@@ -85,7 +85,7 @@ export class View{
    if(texture)coach.sprite.material.map=texture;
   });
  }
- warmupLabel(text,width,worldWidth){
+ coachLabel(text,width,worldWidth){
   const canvas=document.createElement('canvas');
   canvas.width=width;canvas.height=64;
   const ctx=canvas.getContext('2d');
@@ -98,8 +98,8 @@ export class View{
   this.scene.add(label);return label;
  }
  createWarmupArt(){
-  this.warmupBubbles=Array.from({length:6},()=>this.warmupLabel('?',64,.62));
-  this.coachBubble=this.warmupLabel('Aquecimento até o GN ficar sóbrio!',600,5.8);
+  this.coachBubble=this.coachLabel('Aquecimento até o GN ficar sóbrio!',600,5.8);
+  this.concededBubble=this.coachLabel('Se tivesse feito o que eu pedi, não teria perdido a Supercopa',950,8.4);
   this.warmupBalls=Array.from({length:3},()=>{
    const ball=this.ball.clone();ball.visible=false;this.scene.add(ball);return ball;
   });
@@ -107,8 +107,9 @@ export class View{
  updateWarmupArt(game,elapsed){
   const warming=elapsed!==null;
   this.coachBubble.visible=warming;
+  this.concededBubble.visible=!warming&&game.xandao&&this.coaches[1].reaction>0;
+  this.concededBubble.position.copy(this.coaches[0].sprite.position).y+=2.25;
   this.warmupBalls.forEach(ball=>ball.visible=warming);
-  this.warmupBubbles.forEach(label=>label.visible=warming);
   this.aim.visible=!warming;
   if(!warming)return;
   this.ball.visible=this.ballShadow.visible=false;
@@ -130,7 +131,6 @@ export class View{
     actionTime:contacting?.12:0,spriteBack:side>0},mesh,game.teams[0]);
    const rivalMesh=this.playerMeshes[i+6];
    this.updatePlayerSprite({...rival,action:'idle',actionTime:0},rivalMesh,game.teams[1]);
-   this.warmupBubbles[i].position.set(rival.x,2.12,rival.z);
    if(i<3)this.warmupBalls[pair].position.set(x,1.35+Math.sin(phase*Math.PI)*1.7,from*3.6*(1-2*phase));
   }
  }

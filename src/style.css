@@ -347,6 +347,8 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
 #result .textbtn {margin-top:10px;padding:10px}
 .unlock-portrait {width:min(144px,28vh);image-rendering:pixelated}
 .unlock-name {display:block;color:var(--accent);font-size:1.1rem;margin-top:8px}
+.farewell-art {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.farewell-art img {width:100%;aspect-ratio:1;object-fit:cover;border:1px solid #ff8a3055}
 .podium {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:5px;margin-top:22px}
 .podium > div {display:grid;grid-template-rows:auto auto 1fr;align-items:center;justify-items:center;gap:5px;padding:8px 4px;background:linear-gradient(#212124,var(--stand));border-top:3px solid var(--medal)}
 .podium span {font-size:clamp(26px,6vw,52px)}
