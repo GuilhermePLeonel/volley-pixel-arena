@@ -85,35 +85,23 @@ export class View{
    if(texture)coach.sprite.material.map=texture;
   });
  }
- coachLabel(text,width,worldWidth){
-  const canvas=document.createElement('canvas');
-  canvas.width=width;canvas.height=64;
-  const ctx=canvas.getContext('2d');
-  ctx.fillStyle='#151515';ctx.fillRect(0,0,width,64);
-  ctx.strokeStyle='#ff8a30';ctx.lineWidth=4;ctx.strokeRect(2,2,width-4,60);
-  ctx.font='bold 30px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillStyle='#fff';ctx.fillText(text,width/2,33,width-16);
-  const label=new THREE.Sprite(new THREE.SpriteMaterial({map:this.texture(canvas),depthTest:false}));
-  label.scale.set(worldWidth,.62,1);label.renderOrder=25;label.visible=false;
-  this.scene.add(label);return label;
- }
  createWarmupArt(){
-  this.coachBubble=this.coachLabel('Aquecimento até o GN ficar sóbrio!',600,5.8);
-  this.concededBubble=this.coachLabel('Se tivesse feito o que eu pedi, não teria perdido a Supercopa',950,8.4);
+  this.coachBubble=document.createElement('div');
+  this.coachBubble.className='coach-speech';
+  this.coachBubble.setAttribute('role','status');
+  this.coachBubble.hidden=true;
+  this.host.appendChild(this.coachBubble);
+  this.speechPoint=new THREE.Vector3();
   this.warmupBalls=Array.from({length:3},()=>{
    const ball=this.ball.clone();ball.visible=false;this.scene.add(ball);return ball;
   });
  }
  updateWarmupArt(game,elapsed){
   const warming=elapsed!==null;
-  this.coachBubble.visible=warming;
-  this.concededBubble.visible=!warming&&game.xandao&&this.coaches[1].reaction>0;
-  this.concededBubble.position.copy(this.coaches[0].sprite.position).y+=2.25;
   this.warmupBalls.forEach(ball=>ball.visible=warming);
   this.aim.visible=!warming;
   if(!warming)return;
   this.ball.visible=this.ballShadow.visible=false;
-  this.coachBubble.position.copy(this.coaches[0].sprite.position).y+=2.25;
   for(let i=0;i<6;i++){
    const home=game.players[i],rival=game.players[i+6],mesh=this.playerMeshes[i];
    const pair=i%3,side=i<3?-1:1;
@@ -133,6 +121,45 @@ export class View{
    this.updatePlayerSprite({...rival,action:'idle',actionTime:0},rivalMesh,game.teams[1]);
    if(i<3)this.warmupBalls[pair].position.set(x,1.35+Math.sin(phase*Math.PI)*1.7,from*3.6*(1-2*phase));
   }
+ }
+ projectStage(position,dx,dy,width,height){
+  const point=this.speechPoint.copy(position).applyMatrix4(this.camera.matrixWorldInverse);
+  point.x+=dx;point.y+=dy;
+  point.applyMatrix4(this.camera.projectionMatrix);
+  return {x:(point.x+1)*width/2,y:(1-point.y)*height/2};
+ }
+ updateCoachSpeech(game,warming){
+  const text=warming?'Aquecimento até o GN\nficar sóbrio!':
+   game.xandao&&this.coaches[1].reaction>0?'Se tivesse feito o que eu pedi,\nnão teria perdido a Supercopa':'';
+  const bubble=this.coachBubble;
+  bubble.hidden=!text;
+  if(!text)return;
+  if(bubble.textContent!==text)bubble.textContent=text;
+  const width=this.host.clientWidth,height=this.host.clientHeight;
+  const w=bubble.offsetWidth,h=bubble.offsetHeight;
+  const margin=14,gap=34;
+  const clamp=(value,min,max)=>Math.max(min,Math.min(value,max));
+  this.camera.updateMatrixWorld();
+  const coach=this.coaches[0].sprite;
+  const anchor=this.projectStage(coach.position,0,coach.scale.y*(1-coach.center.y),width,height);
+  const players=this.playerMeshes.filter(mesh=>mesh.sprite.visible).map(({sprite})=>{
+   const leftTop=this.projectStage(sprite.position,-sprite.scale.x/2,sprite.scale.y*.9,width,height);
+   const rightBottom=this.projectStage(sprite.position,sprite.scale.x/2,-sprite.scale.y*.1,width,height);
+   return {left:leftTop.x-6,top:leftTop.y-6,right:rightBottom.x+6,bottom:rightBottom.y+6};
+  });
+  const centered=anchor.x-w/2;
+  const preferredTop=clamp(anchor.y-h-gap,margin,height-h-margin);
+  let best;
+  for(const [dx,dy] of [[0,0],[-w*.28,0],[w*.28,0],[0,-h*.55],[-w*.28,-h*.55],[w*.28,-h*.55]]){
+   const x=clamp(centered+dx,margin,width-w-margin),y=Math.max(margin,preferredTop+dy);
+   const overlap=players.reduce((area,p)=>area+
+    Math.max(0,Math.min(x+w,p.right)-Math.max(x,p.left))*
+    Math.max(0,Math.min(y+h,p.bottom)-Math.max(y,p.top)),0);
+   const score=overlap*4+Math.hypot(x-clamp(centered,margin,width-w-margin),y-preferredTop);
+   if(!best||score<best.score)best={x,y,score};
+  }
+  bubble.style.transform=`translate(${Math.round(best.x)}px,${Math.round(best.y)}px)`;
+  bubble.style.setProperty('--tail-offset',`${clamp(anchor.x-best.x,22,w-22)}px`);
  }
  playerAtlas(player,team){
   if(player.team===0)return this.atlases[player.athleteId]||this.atlases.original;
@@ -197,5 +224,5 @@ export class View{
   this.ballShadow.position.set(ball.x,.1,ball.z);
   this.ballShadow.scale.setScalar(Math.max(.35,1-ball.y*.08));
  }
- render(game,warmup=null){let now=performance.now(),dt=Math.min((now-this.lastRender)/1000,.1);this.lastRender=now;this.updateCoaches(game,dt);this.stands.update(dt);this.updateCometTrail(game,dt);if(this.impactTime>0){this.impactTime=Math.max(0,this.impactTime-dt);let progress=1-this.impactTime/.42;this.impact.scale.setScalar(.6+progress*2);this.impact.material.opacity=1-progress;this.impact.material.rotation=progress*.5;this.impact.visible=this.impactTime>0}let desired=game.ball.live?THREE.MathUtils.clamp(game.ball.z*.045,-.22,.22):0;this.cameraYaw+=(desired-this.cameraYaw)*(1-Math.exp(-dt*1.8));this.camera.position.set(-27*Math.cos(this.cameraYaw),20,27*Math.sin(this.cameraYaw));this.camera.lookAt(0,0,0);game.cameraYaw=this.cameraYaw;for(let i=0;i<game.players.length;i++){let p=game.players[i],m=this.playerMeshes[i];m.sprite.position.set(p.x,.1+p.y,p.z);this.updatePlayerSprite(p,m,game.teams[p.team]);m.shadow.position.set(p.x,.1,p.z);m.shadow.scale.setScalar(1-p.y*.12);m.marker.visible=p===game.controlled&&!game.liberoOff;m.marker.position.set(p.x,.11,p.z)}let b=game.ball;this.updateBallSprite(game);this.aim.position.set(game.aim.x,.1,game.aim.z);this.aim.material.color.set(game.aimValid()?0xfff4e7:0xff7a70);let pts=[];let shot=game.previewShot();if(shot){let t=shot.destination,T=shot.duration;if(shot.waypoint){pts.push(new THREE.Vector3(b.x,b.y,b.z),new THREE.Vector3(shot.waypoint.x,shot.waypoint.y,shot.waypoint.z));if(!shot.blockedAngle)pts.push(new THREE.Vector3(t.x,t.y,t.z))}else for(let i=0;i<=24;i++){let f=i/24;let y=b.y+(t.y-b.y)*f+.5*shot.gravity*T*T*f*(1-f);pts.push(new THREE.Vector3(b.x+(t.x-b.x)*f,y,b.z+(t.z-b.z)*f))}}this.line.geometry.setFromPoints(pts);this.updateSetIndicator(game);this.tacticalOverlay.update(game);this.updateWarmupArt(game,warmup);this.renderer.render(this.scene,this.camera)}
+ render(game,warmup=null){let now=performance.now(),dt=Math.min((now-this.lastRender)/1000,.1);this.lastRender=now;this.updateCoaches(game,dt);this.stands.update(dt);this.updateCometTrail(game,dt);if(this.impactTime>0){this.impactTime=Math.max(0,this.impactTime-dt);let progress=1-this.impactTime/.42;this.impact.scale.setScalar(.6+progress*2);this.impact.material.opacity=1-progress;this.impact.material.rotation=progress*.5;this.impact.visible=this.impactTime>0}let desired=game.ball.live?THREE.MathUtils.clamp(game.ball.z*.045,-.22,.22):0;this.cameraYaw+=(desired-this.cameraYaw)*(1-Math.exp(-dt*1.8));this.camera.position.set(-27*Math.cos(this.cameraYaw),20,27*Math.sin(this.cameraYaw));this.camera.lookAt(0,0,0);game.cameraYaw=this.cameraYaw;for(let i=0;i<game.players.length;i++){let p=game.players[i],m=this.playerMeshes[i];m.sprite.position.set(p.x,.1+p.y,p.z);this.updatePlayerSprite(p,m,game.teams[p.team]);m.shadow.position.set(p.x,.1,p.z);m.shadow.scale.setScalar(1-p.y*.12);m.marker.visible=p===game.controlled&&!game.liberoOff;m.marker.position.set(p.x,.11,p.z)}let b=game.ball;this.updateBallSprite(game);this.aim.position.set(game.aim.x,.1,game.aim.z);this.aim.material.color.set(game.aimValid()?0xfff4e7:0xff7a70);let pts=[];let shot=game.previewShot();if(shot){let t=shot.destination,T=shot.duration;if(shot.waypoint){pts.push(new THREE.Vector3(b.x,b.y,b.z),new THREE.Vector3(shot.waypoint.x,shot.waypoint.y,shot.waypoint.z));if(!shot.blockedAngle)pts.push(new THREE.Vector3(t.x,t.y,t.z))}else for(let i=0;i<=24;i++){let f=i/24;let y=b.y+(t.y-b.y)*f+.5*shot.gravity*T*T*f*(1-f);pts.push(new THREE.Vector3(b.x+(t.x-b.x)*f,y,b.z+(t.z-b.z)*f))}}this.line.geometry.setFromPoints(pts);this.updateSetIndicator(game);this.tacticalOverlay.update(game);this.updateWarmupArt(game,warmup);this.updateCoachSpeech(game,warmup!==null);this.renderer.render(this.scene,this.camera)}
 }

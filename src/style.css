@@ -349,6 +349,21 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
 .unlock-name {display:block;color:var(--accent);font-size:1.1rem;margin-top:8px}
 .farewell-art {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
 .farewell-art img {width:100%;aspect-ratio:1;object-fit:cover;border:1px solid #ff8a3055}
+.coach-speech {
+ position:absolute;top:0;left:0;pointer-events:none;
+ width:max-content;max-width:min(250px,calc(100% - 28px));
+ padding:9px 18px;border:2px solid #29180e;border-radius:48% / 44%;
+ background:#fff2d7;color:#271509;box-shadow:0 3px 0 #e68b43,0 6px 12px #0006;
+ font-size:clamp(12px,2vw,14px);font-weight:800;line-height:1.3;text-align:center;
+ white-space:pre-line;text-wrap:balance;overflow-wrap:anywhere;
+}
+.coach-speech::before,.coach-speech::after {
+ content:'';position:absolute;left:calc(var(--tail-offset) - 10px);
+ bottom:-15px;width:22px;height:18px;
+ clip-path:polygon(0 0,100% 0,55% 100%);
+}
+.coach-speech::before {background:#29180e}
+.coach-speech::after {background:#fff2d7;transform:translateY(-3px) scaleX(.72)}
 .podium {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:5px;margin-top:22px}
 .podium > div {display:grid;grid-template-rows:auto auto 1fr;align-items:center;justify-items:center;gap:5px;padding:8px 4px;background:linear-gradient(#212124,var(--stand));border-top:3px solid var(--medal)}
 .podium span {font-size:clamp(26px,6vw,52px)}
