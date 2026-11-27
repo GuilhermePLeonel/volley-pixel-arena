@@ -9,6 +9,12 @@ export const athletes = [
  {id:'gn',name:'GN',role:'Ponteiro',skin:'#c68655',portrait:[1516,141,233,283]},
  {id:'fabio',name:'Fabio',role:'Líbero',skin:'#d9a07a',portrait:[36,518,275,275]},
  {id:'bahia',name:'Bahia',role:'Levantador',skin:'#d3a077',portrait:[336,518,263,275]},
+ {id:'felipe-potter',name:'Felipe Potter',role:'Levantador',skin:'#cc906b'},
+ {id:'pele',name:'Pelé',role:'Ponteiro',skin:'#75472f'},
+ {id:'ronan',name:'Ronan',role:'Oposto',skin:'#a86a46'},
+ {id:'lucas',name:'Lucas',role:'Central',skin:'#966447'},
+ {id:'gabe',name:'Gabe',role:'Líbero',skin:'#b57e57'},
+ {id:'lionel',name:'Lionel',role:'Oposto',skin:'#a66f4e'},
 ];
 export const coach={name:'Jefferson',role:'Técnico',portrait:[626,518,263,275]};
 export const athleteById = id => athletes.find(a=>a.id===id);

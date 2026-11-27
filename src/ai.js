@@ -14,11 +14,11 @@ export function makePlayers(){
 }
 
 export function chooseAIAttackTarget(team,difficulty,random=Math.random){
- const error=difficulty==='Fácil'?1.7:difficulty==='Difícil'?.35:.85;
+ const error=difficulty==='Muito difícil'?.15:difficulty==='Fácil'?1.7:difficulty==='Difícil'?.35:.85;
  const deep=random()<.85;
  const x=(team?-1:1)*(deep?6+random()*2.5:4+random()*2);
  let z=(random()-.5)*(6+error);
- const miss=difficulty==='Fácil'?.17:difficulty==='Difícil'?.06:.1;
+ const miss=difficulty==='Muito difícil'?.025:difficulty==='Fácil'?.17:difficulty==='Difícil'?.06:.1;
  if(random()<miss)z=(random()<.5?-1:1)*(4.7+random()*.9);
  return {x,z};
 }
@@ -118,7 +118,7 @@ export function updateAI(game,dt){
   const eligible=own.filter(p=>assigned!==null?p.id===assigned:p!==human||humanReady);
   const flight=game.flight;
   const fromOpponent=flight&&flight.team!==team;
-  const reaction=game.difficulty==='Fácil'?.23:game.difficulty==='Difícil'?.12:.18;
+  const reaction=game.difficulty==='Muito difícil'?.08:game.difficulty==='Fácil'?.23:game.difficulty==='Difícil'?.12:.18;
   const waiting=fromOpponent&&flight.kind==='attack'&&game.clock-flight.started<reaction;
   const outside=fromOpponent&&['attack','serve','free','tip'].includes(flight.kind)&&
    (Math.abs(flight.target.x)>9.35||Math.abs(flight.target.z)>4.82);

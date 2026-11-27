@@ -1,3 +1,4 @@
+import xandaoSprite from './assets/xandao-quadra.png';
 import {TacticalOverlay} from './tactical-debug.js';
 import * as THREE from 'three';
 import {Stands} from './stands.js';
@@ -5,17 +6,19 @@ import {makeBallTexture,addRefereeStand} from './court-art.js';
 import coachCelebration from './assets/jefferson-reaction.webp';
 import originalAtlas from './assets/volley-original.png';
 import coachSprite from './assets/atletas/jefferson.webp';
-const athleteSprites=import.meta.glob('./assets/atletas/*.webp',{eager:true,query:'?url',import:'default'});
+const athleteSprites=import.meta.glob('./assets/atletas/*.{png,webp}',{eager:true,query:'?url',import:'default'});
 import {teamUniform} from './sprite-variants.js';
+import {athleteById} from './roster.js';
 const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.85});
 export class View{
- constructor(host,players){this.host=host;this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x101010);this.camera=new THREE.PerspectiveCamera(38,1,.1,120);this.camera.position.set(-27,20,.01);this.camera.lookAt(0,0,0);this.cameraYaw=0;this.lastRender=performance.now();this.renderer=new THREE.WebGLRenderer({antialias:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(this.renderer.domElement);this.scene.add(new THREE.HemisphereLight(0xf5f3ef,0x574132,2));let light=new THREE.DirectionalLight(0xfff2df,2.3);light.position.set(-6,20,9);light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.camera.left=-16;light.shadow.camera.right=16;light.shadow.camera.top=16;light.shadow.camera.bottom=-16;this.scene.add(light);this.buildCourt();this.tacticalOverlay=new TacticalOverlay(this.scene);this.stands=new Stands(this.scene);let loader=new THREE.TextureLoader();this.atlases={original:loader.load(originalAtlas)};for(const [path,url] of Object.entries(athleteSprites)){let id=path.split('/').pop().replace('.webp','');if(id!=='jefferson')this.atlases[id]=loader.load(url)}
+ constructor(host,players){this.host=host;this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x101010);this.camera=new THREE.PerspectiveCamera(38,1,.1,120);this.camera.position.set(-27,20,.01);this.camera.lookAt(0,0,0);this.cameraYaw=0;this.lastRender=performance.now();this.renderer=new THREE.WebGLRenderer({antialias:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(this.renderer.domElement);this.scene.add(new THREE.HemisphereLight(0xf5f3ef,0x574132,2));let light=new THREE.DirectionalLight(0xfff2df,2.3);light.position.set(-6,20,9);light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.camera.left=-16;light.shadow.camera.right=16;light.shadow.camera.top=16;light.shadow.camera.bottom=-16;this.scene.add(light);this.buildCourt();this.tacticalOverlay=new TacticalOverlay(this.scene);this.stands=new Stands(this.scene);let loader=new THREE.TextureLoader();this.atlases={original:loader.load(originalAtlas)};for(const [path,url] of Object.entries(athleteSprites)){let id=path.split('/').pop().replace(/\.(png|webp)$/,'');if(id!=='jefferson')this.atlases[id]=loader.load(url)}
   this.uniforms=new Map();
   this.rivalCoachFrames=new Map();
   this.coachIdle=this.loadSprite(loader,coachSprite);
+  this.xandao=this.loadSprite(loader,xandaoSprite);
   this.coachCheer=this.loadSprite(loader,coachCelebration);
   this.coaches=[0,1].map(side=>this.makeCoach(side));
-  addRefereeStand(this.scene,(...args)=>this.box(...args));for(const texture of Object.values(this.atlases)){texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestFilter;texture.colorSpace=THREE.SRGBColorSpace}this.playerMeshes=players.map(p=>this.makePlayer(p));let bt=makeBallTexture();let ball=new THREE.Sprite(new THREE.SpriteMaterial({map:bt,transparent:true,depthWrite:false}));ball.scale.set(.52,.52,1);this.scene.add(ball);this.ball=ball;this.ballShadow=this.shadow(.3);this.createImpact();this.createCometTrail();this.createSetIndicator();this.aim=new THREE.Mesh(new THREE.RingGeometry(.3,.38,32),new THREE.MeshBasicMaterial({color:0xfff4e7,side:THREE.DoubleSide,transparent:true,opacity:.8}));this.aim.rotation.x=-Math.PI/2;this.aim.position.y=.035;this.scene.add(this.aim);this.line=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xfff4e7,transparent:true,opacity:.55}));this.scene.add(this.line);this.ray=new THREE.Raycaster();this.plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);this.resize();window.addEventListener('resize',()=>this.resize())}
+  addRefereeStand(this.scene,(...args)=>this.box(...args));for(const texture of Object.values(this.atlases)){texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestFilter;texture.colorSpace=THREE.SRGBColorSpace}this.playerMeshes=players.map(p=>this.makePlayer(p));let bt=makeBallTexture();let ball=new THREE.Sprite(new THREE.SpriteMaterial({map:bt,transparent:true,depthWrite:false}));ball.scale.set(.52,.52,1);this.scene.add(ball);this.ball=ball;this.createWarmupArt();this.ballShadow=this.shadow(.3);this.createImpact();this.createCometTrail();this.createSetIndicator();this.aim=new THREE.Mesh(new THREE.RingGeometry(.3,.38,32),new THREE.MeshBasicMaterial({color:0xfff4e7,side:THREE.DoubleSide,transparent:true,opacity:.8}));this.aim.rotation.x=-Math.PI/2;this.aim.position.y=.035;this.scene.add(this.aim);this.line=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xfff4e7,transparent:true,opacity:.55}));this.scene.add(this.line);this.ray=new THREE.Raycaster();this.plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);this.resize();window.addEventListener('resize',()=>this.resize())}
  createCometTrail(){let canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;let ctx=canvas.getContext('2d');let glow=ctx.createRadialGradient(32,32,1,32,32,30);glow.addColorStop(0,'rgba(255,255,230,1)');glow.addColorStop(.22,'rgba(255,215,82,.9)');glow.addColorStop(.55,'rgba(255,105,24,.48)');glow.addColorStop(1,'rgba(255,65,10,0)');ctx.fillStyle=glow;ctx.fillRect(0,0,64,64);let texture=new THREE.CanvasTexture(canvas);this.trail=[];this.trailPoints=[];this.trailClock=0;for(let i=0;i<12;i++){let sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));sprite.visible=false;this.scene.add(sprite);this.trail.push(sprite)}}
  updateCometTrail(game,dt){let b=game.ball;if(b.live&&b.comet){this.trailClock+=dt;if(this.trailClock>=.025||this.trailPoints.length===0){this.trailClock=0;this.trailPoints.unshift({x:b.x,y:b.y,z:b.z});this.trailPoints.length=Math.min(this.trailPoints.length,this.trail.length)}}else{this.trailPoints.length=0;this.trailClock=0}for(let i=0;i<this.trail.length;i++){let sprite=this.trail[i],point=this.trailPoints[i];sprite.visible=!!point;if(point){let fade=1-i/this.trail.length;sprite.position.set(point.x,point.y,point.z);sprite.scale.setScalar(.2+.48*fade);sprite.material.opacity=.68*fade}}}
  createSetIndicator(){
@@ -35,7 +38,7 @@ export class View{
   if(!base.image)return null;
   const key=team.id+':'+athleteId+':'+libero;
   if(!this.uniforms.has(key)){
-   const whiteBase=athleteId==='betinho'||athleteId==='fabio';
+   const whiteBase=athleteById(athleteId)?.role==='Líbero';
    this.uniforms.set(key,this.texture(teamUniform(base.image,team,{libero,whiteBase})));
   }
   return this.uniforms.get(key);
@@ -76,11 +79,60 @@ export class View{
   this.coaches.forEach((coach,side)=>{
    coach.reaction=Math.max(0,coach.reaction-dt);
    const cheering=coach.reaction>0;
-   const texture=side===0?(cheering?this.coachCheer:this.coachIdle):
+   const texture=side===0?(game.xandao?this.xandao:cheering?this.coachCheer:this.coachIdle):
     this.rivalCoachFrame(game.rivalRoster.coach,game.teams[1],cheering);
    coach.sprite.visible=!!texture;
    if(texture)coach.sprite.material.map=texture;
   });
+ }
+ warmupLabel(text,width,worldWidth){
+  const canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=64;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#151515';ctx.fillRect(0,0,width,64);
+  ctx.strokeStyle='#ff8a30';ctx.lineWidth=4;ctx.strokeRect(2,2,width-4,60);
+  ctx.font='bold 30px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#fff';ctx.fillText(text,width/2,33,width-16);
+  const label=new THREE.Sprite(new THREE.SpriteMaterial({map:this.texture(canvas),depthTest:false}));
+  label.scale.set(worldWidth,.62,1);label.renderOrder=25;label.visible=false;
+  this.scene.add(label);return label;
+ }
+ createWarmupArt(){
+  this.warmupBubbles=Array.from({length:6},()=>this.warmupLabel('?',64,.62));
+  this.coachBubble=this.warmupLabel('Aquecimento até o GN ficar sóbrio!',600,5.8);
+  this.warmupBalls=Array.from({length:3},()=>{
+   const ball=this.ball.clone();ball.visible=false;this.scene.add(ball);return ball;
+  });
+ }
+ updateWarmupArt(game,elapsed){
+  const warming=elapsed!==null;
+  this.coachBubble.visible=warming;
+  this.warmupBalls.forEach(ball=>ball.visible=warming);
+  this.warmupBubbles.forEach(label=>label.visible=warming);
+  this.aim.visible=!warming;
+  if(!warming)return;
+  this.ball.visible=this.ballShadow.visible=false;
+  this.coachBubble.position.copy(this.coaches[0].sprite.position).y+=2.25;
+  for(let i=0;i<6;i++){
+   const home=game.players[i],rival=game.players[i+6],mesh=this.playerMeshes[i];
+   const pair=i%3,side=i<3?-1:1;
+   const x=-7.6+pair*2.5,z=side*3.6;
+   const cycle=(elapsed+pair*.23)%1.8;
+   const phase=(cycle%.9)/.9;
+   const from=cycle<.9?-1:1;
+   const returning=side!==from;
+   const contacting=returning?phase>.82:phase<.20;
+   const jump=contacting?.1*Math.sin(Math.PI*(returning?(phase-.82)/.18:phase/.20)):0;
+   mesh.sprite.position.set(x,.1+jump,z);
+   mesh.shadow.position.set(x,.1,z);
+   mesh.marker.visible=false;
+   this.updatePlayerSprite({...home,action:contacting?'set':'idle',actionPose:'set',
+    actionTime:contacting?.12:0,spriteBack:side>0},mesh,game.teams[0]);
+   const rivalMesh=this.playerMeshes[i+6];
+   this.updatePlayerSprite({...rival,action:'idle',actionTime:0},rivalMesh,game.teams[1]);
+   this.warmupBubbles[i].position.set(rival.x,2.12,rival.z);
+   if(i<3)this.warmupBalls[pair].position.set(x,1.35+Math.sin(phase*Math.PI)*1.7,from*3.6*(1-2*phase));
+  }
  }
  playerAtlas(player,team){
   if(player.team===0)return this.atlases[player.athleteId]||this.atlases.original;
@@ -145,5 +197,5 @@ export class View{
   this.ballShadow.position.set(ball.x,.1,ball.z);
   this.ballShadow.scale.setScalar(Math.max(.35,1-ball.y*.08));
  }
- render(game){let now=performance.now(),dt=Math.min((now-this.lastRender)/1000,.1);this.lastRender=now;this.updateCoaches(game,dt);this.stands.update(dt);this.updateCometTrail(game,dt);if(this.impactTime>0){this.impactTime=Math.max(0,this.impactTime-dt);let progress=1-this.impactTime/.42;this.impact.scale.setScalar(.6+progress*2);this.impact.material.opacity=1-progress;this.impact.material.rotation=progress*.5;this.impact.visible=this.impactTime>0}let desired=game.ball.live?THREE.MathUtils.clamp(game.ball.z*.045,-.22,.22):0;this.cameraYaw+=(desired-this.cameraYaw)*(1-Math.exp(-dt*1.8));this.camera.position.set(-27*Math.cos(this.cameraYaw),20,27*Math.sin(this.cameraYaw));this.camera.lookAt(0,0,0);game.cameraYaw=this.cameraYaw;for(let i=0;i<game.players.length;i++){let p=game.players[i],m=this.playerMeshes[i];m.sprite.position.set(p.x,.1+p.y,p.z);this.updatePlayerSprite(p,m,game.teams[p.team]);m.shadow.position.set(p.x,.1,p.z);m.shadow.scale.setScalar(1-p.y*.12);m.marker.visible=p===game.controlled&&!game.liberoOff;m.marker.position.set(p.x,.11,p.z)}let b=game.ball;this.updateBallSprite(game);this.aim.position.set(game.aim.x,.1,game.aim.z);this.aim.material.color.set(game.aimValid()?0xfff4e7:0xff7a70);let pts=[];let shot=game.previewShot();if(shot){let t=shot.destination,T=shot.duration;if(shot.waypoint){pts.push(new THREE.Vector3(b.x,b.y,b.z),new THREE.Vector3(shot.waypoint.x,shot.waypoint.y,shot.waypoint.z));if(!shot.blockedAngle)pts.push(new THREE.Vector3(t.x,t.y,t.z))}else for(let i=0;i<=24;i++){let f=i/24;let y=b.y+(t.y-b.y)*f+.5*shot.gravity*T*T*f*(1-f);pts.push(new THREE.Vector3(b.x+(t.x-b.x)*f,y,b.z+(t.z-b.z)*f))}}this.line.geometry.setFromPoints(pts);this.updateSetIndicator(game);this.tacticalOverlay.update(game);this.renderer.render(this.scene,this.camera)}
+ render(game,warmup=null){let now=performance.now(),dt=Math.min((now-this.lastRender)/1000,.1);this.lastRender=now;this.updateCoaches(game,dt);this.stands.update(dt);this.updateCometTrail(game,dt);if(this.impactTime>0){this.impactTime=Math.max(0,this.impactTime-dt);let progress=1-this.impactTime/.42;this.impact.scale.setScalar(.6+progress*2);this.impact.material.opacity=1-progress;this.impact.material.rotation=progress*.5;this.impact.visible=this.impactTime>0}let desired=game.ball.live?THREE.MathUtils.clamp(game.ball.z*.045,-.22,.22):0;this.cameraYaw+=(desired-this.cameraYaw)*(1-Math.exp(-dt*1.8));this.camera.position.set(-27*Math.cos(this.cameraYaw),20,27*Math.sin(this.cameraYaw));this.camera.lookAt(0,0,0);game.cameraYaw=this.cameraYaw;for(let i=0;i<game.players.length;i++){let p=game.players[i],m=this.playerMeshes[i];m.sprite.position.set(p.x,.1+p.y,p.z);this.updatePlayerSprite(p,m,game.teams[p.team]);m.shadow.position.set(p.x,.1,p.z);m.shadow.scale.setScalar(1-p.y*.12);m.marker.visible=p===game.controlled&&!game.liberoOff;m.marker.position.set(p.x,.11,p.z)}let b=game.ball;this.updateBallSprite(game);this.aim.position.set(game.aim.x,.1,game.aim.z);this.aim.material.color.set(game.aimValid()?0xfff4e7:0xff7a70);let pts=[];let shot=game.previewShot();if(shot){let t=shot.destination,T=shot.duration;if(shot.waypoint){pts.push(new THREE.Vector3(b.x,b.y,b.z),new THREE.Vector3(shot.waypoint.x,shot.waypoint.y,shot.waypoint.z));if(!shot.blockedAngle)pts.push(new THREE.Vector3(t.x,t.y,t.z))}else for(let i=0;i<=24;i++){let f=i/24;let y=b.y+(t.y-b.y)*f+.5*shot.gravity*T*T*f*(1-f);pts.push(new THREE.Vector3(b.x+(t.x-b.x)*f,y,b.z+(t.z-b.z)*f))}}this.line.geometry.setFromPoints(pts);this.updateSetIndicator(game);this.tacticalOverlay.update(game);this.updateWarmupArt(game,warmup);this.renderer.render(this.scene,this.camera)}
 }

@@ -1,7 +1,7 @@
 import {clamp,dist} from './physics.js';
 import {approachFor,attackOption,infiltrationTarget,isFront,officialZone,orient,preferredPosition,receptionFormation,rotations,settingZone} from './tactics.js';
 
-export const botSpeed=game=>game.difficulty==='Fácil'?3.65:game.difficulty==='Difícil'?5.05:4.35;
+export const botSpeed=game=>game.difficulty==='Muito difícil'?5.65:game.difficulty==='Fácil'?3.65:game.difficulty==='Difícil'?5.05:4.35;
 const local=(team,q)=>orient(team,q.x,q.z);
 const ownHalf=(q,team)=>team?q.x>.15:q.x<-.15;
 const isHuman=(game,p)=>game.controlled===p&&!game.liberoOff;

@@ -241,7 +241,7 @@ export class Game{
    return this.contact(p,play.spot,.5,true,play.player.id,0,play);
   }
   const target=this.aiAttackAim(team);
-  const strongChance=this.difficulty==='Fácil'?.09:this.difficulty==='Difícil'?.32:.24;
+  const strongChance=this.difficulty==='Muito difícil'?.43:this.difficulty==='Fácil'?.09:this.difficulty==='Difícil'?.32:.24;
   const power=Math.random()<strongChance?1:.68+Math.random()*.27;
   if(ball.y<1.75||p.role==='Líbero'||!isFront(p,rules.rotation[team])&&
      Math.abs(p.y>.01?(p.takeoffX??p.x):p.x)<3&&ball.y>2.81){

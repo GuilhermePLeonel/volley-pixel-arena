@@ -76,6 +76,10 @@ O jogo avança em passos de 1/60 s. `src/game.js` coordena partida e ações, `p
 
 ## Assets e licenças
 
+O elenco da Rino Finanças inclui Felipe Potter (levantador), Pelé (ponteiro), Ronan e Lionel (opostos), Lucas (central) e Gabe (líbero). Seus retratos e suas folhas de animação foram gerados a partir das referências visuais fornecidas pelo usuário. As folhas seguem a grade de 12 × 12 quadros do elenco, com vistas de frente e de costas. Gabe usa a camisa branca com detalhes em laranja e preto dos líberos.
+
+No modo Carreira, o Rino enfrenta Humanas, Phanters, Águias e Unissuam em partidas de um set, com dificuldade crescente. Cada vitória libera a etapa seguinte. O navegador salva o progresso para continuar mais tarde.
+
 Os sprites individuais dos atletas e do técnico foram fornecidos pelo usuário em Sprites_Volei.zip; o sprite alternativo dos adversários foi extraído de Sprites_Voleibol.pdf, fornecido pelo usuário; o PDF não informa autoria ou licença dos desenhos. As variações de uniforme foram produzidas a partir desses quadros. O escudo da Atlética de Finanças UFRRJ usado nas bandeiras também foi fornecido pelo usuário. Geometria e efeitos sonoros são gerados pelo código deste projeto. O script scripts/extract_pdf_sprites.py reproduz a extração com pypdf e Pillow. Three.js e Vite são dependências de código aberto; suas licenças acompanham os respectivos pacotes em `node_modules`. As fontes Barlow Condensed e DM Sans são carregadas do Google Fonts e disponibilizadas sob a SIL Open Font License. A aplicação precisa de acesso à rede para carregar essas fontes, mas usa fontes de reserva caso não estejam disponíveis.
 
 Os arquivos sem nomes foram associados provisoriamente: `Variante_10` a Ryan, `Variante_11` a GN, `Variante_2` a Fabio e `Variante_levantador` a Bahia. `Variante_3` permanece sem associação.

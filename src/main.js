@@ -1,3 +1,5 @@
+import {career,matchProgress} from './progression.js';
+import xandaoPortrait from './assets/xandao-retrato.png';
 import './style.css';
 import {Game} from './game.js';
 import {rotations} from './tactics.js';
@@ -10,11 +12,12 @@ import {athletesForRole,athleteById} from './roster.js';
 import {homeTeam,opponents} from './teams.js';
 import teamReference from './assets/equipe-referencia.png';
 import rinoIcon from './assets/volley-rino.png';
+const athletePortraits=import.meta.glob('./assets/retratos/*.png',{eager:true,query:'?url',import:'default'});
 const app=document.querySelector('#app');
 app.innerHTML=`<div id="stage"></div><div class="grain"></div><header class="topbar"><div class="brand"><img class="brand-mark" src="${rinoIcon}" alt=""><div><b>VOLLEY <em>RINO</em></b><small>ARENA · 2.5D</small></div></div><div class="top-right"><span class="live-dot"></span><span class="venue">QUADRA CENTRAL</span><span class="divider"></span> <button id="helpBtn">CONTROLES</button></div></header><main id="menu" class="menu"><div class="menu-intro"><div class="eyebrow"><span></span> O JOGO É SEU</div><h1>ENTRE<br><span class="title-line">EM <i>QUADRA.</i></span></h1><p>Monte sua jogada, encontre o espaço e faça a bola cair. Uma experiência de vôlei em 2.5D para jogar no navegador.</p></div><div class="menu-setup"><div class="team-selectors">
  <div class="fixed-team"><small>SEU TIME</small><strong>${homeTeam.name}</strong></div>
  <label>ADVERSÁRIO<select id="rivalTeam"></select></label>
-</div><div class="menu-grid"><label>POSIÇÃO<select id="role"><option>Ponteiro</option><option>Levantador</option><option>Oposto</option><option>Central</option><option>Líbero</option></select></label><label>ATLETA<select id="athlete"></select></label><label>DIFICULDADE<select id="difficulty"><option>Normal</option><option>Fácil</option><option>Difícil</option></select></label></div><div class="athlete-card"><div id="athletePortrait" class="athlete-portrait" role="img"></div><div><small>ATLETA SELECIONADO</small><strong id="athleteName"></strong><span id="athletePosition"></span><span class="coach-name">TÉCNICO · JEFFERSON</span></div></div><div class="menu-actions"><button id="play" class="primary">JOGAR PARTIDA <span>↗</span></button><button id="train" class="secondary">TREINAR</button></div><label class="check"><input id="quick" type="checkbox" checked> PARTIDA RÁPIDA <span>· SET ATÉ 7 PONTOS</span></label><div class="menu-note"><b>01 / PROTÓTIPO JOGÁVEL</b><span>TECLADO + MOUSE</span></div></div></main><div id="hud" class="hud hidden">
+</div><div class="menu-grid"><label>POSIÇÃO<select id="role"><option>Ponteiro</option><option>Levantador</option><option>Oposto</option><option>Central</option><option>Líbero</option></select></label><label>ATLETA<select id="athlete"></select></label><label>DIFICULDADE<select id="difficulty"><option>Normal</option><option>Fácil</option><option>Difícil</option></select></label></div><div class="athlete-card"><div id="athletePortrait" class="athlete-portrait" role="img"></div><div><small>ATLETA SELECIONADO</small><strong id="athleteName"></strong><span id="athletePosition"></span><span id="coachName" class="coach-name">TÉCNICO · JEFFERSON</span></div></div><div class="menu-actions"><button id="play" class="primary">JOGAR PARTIDA <span>↗</span></button><button id="train" class="secondary">TREINAR</button><button id="career" class="secondary">CARREIRA</button></div><label class="check"><input id="quick" type="checkbox" checked> PARTIDA RÁPIDA <span>· SET ATÉ 7 PONTOS</span></label><div class="menu-note"><b>01 / PROTÓTIPO JOGÁVEL</b><span>TECLADO + MOUSE</span></div></div></main><div id="hud" class="hud hidden">
  <div class="hud-top">
   <div class="scoreboard">
    <div class="score" aria-label="Placar">
@@ -48,20 +51,85 @@ app.innerHTML=`<div id="stage"></div><div class="grain"></div><header class="top
    </div>
   </div>
  </div>
-</div><div class="corner-label">VOLLEY RINO <span>✳</span> TEMPORADA 01</div><div id="pause" class="modal hidden"><div><small>TEMPO TÉCNICO</small><h2>JOGO PAUSADO</h2><button id="resume" class="primary">CONTINUAR</button><button id="restart" class="secondary">NOVA PARTIDA</button><button id="back" class="textbtn">VOLTAR AO MENU</button></div></div><div id="help" class="modal hidden"><div><small>GUIA RÁPIDO</small><h2>COMO JOGAR</h2><p class="touch-guide">No celular, arraste o analógico à esquerda para andar ou correr. Toque em PULAR para saltar ou mergulhar como líbero. Toque no botão maior para bater ou arraste nele para ajustar a mira antes de soltar. Você também pode tocar na quadra para mirar.</p><p class="desktop-guide"><b>W A S D</b> movimenta em relação à câmera; <b>Shift</b> corre e <b>Espaço</b> salta ou mergulha.</p><p class="desktop-guide">Mire no chão com o mouse e clique com o botão esquerdo para tocar.</p><p>No chão, o toque para o outro lado sai como largada. No ar, a batida é média. Acerte a bola no topo do salto para a cortada máxima e o rastro de cometa. O aviso “Bata agora” indica esse momento. Para o saque viagem, pule antes de tocar na bola.</p><p>Nos dois primeiros contatos, a bola em queda sobe automaticamente quando entra no seu alcance. O terceiro toque é manual. O círculo verde marca o destino do levantamento e o rótulo identifica quem deve atacar.</p><button id="closeHelp" class="primary">ENTENDI</button></div></div>`;
+</div><div class="corner-label">VOLLEY RINO <span>✳</span> TEMPORADA 01</div><div id="pause" class="modal hidden"><div><small>TEMPO TÉCNICO</small><h2>JOGO PAUSADO</h2><button id="resume" class="primary">CONTINUAR</button><button id="restart" class="secondary">NOVA PARTIDA</button><button id="back" class="textbtn">VOLTAR AO MENU</button></div></div><div id="help" class="modal hidden"><div><small>GUIA RÁPIDO</small><h2>COMO JOGAR</h2><p class="touch-guide">No celular, arraste o analógico à esquerda para andar ou correr. Toque em PULAR para saltar ou mergulhar como líbero. Toque no botão maior para bater ou arraste nele para ajustar a mira antes de soltar. Você também pode tocar na quadra para mirar.</p><p class="desktop-guide"><b>W A S D</b> movimenta em relação à câmera; <b>Shift</b> corre e <b>Espaço</b> salta ou mergulha.</p><p class="desktop-guide">Mire no chão com o mouse e clique com o botão esquerdo para tocar.</p><p>No chão, o toque para o outro lado sai como largada. No ar, a batida é média. Acerte a bola no topo do salto para a cortada máxima e o rastro de cometa. O aviso “Bata agora” indica esse momento. Para o saque viagem, pule antes de tocar na bola.</p><p>Nos dois primeiros contatos, a bola em queda sobe automaticamente quando entra no seu alcance. O terceiro toque é manual. O círculo verde marca o destino do levantamento e o rótulo identifica quem deve atacar.</p><button id="closeHelp" class="primary">ENTENDI</button></div></div>
+<div id="result" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="resultTitle"><div>
+ <h2 id="resultTitle"></h2><div id="resultContent"></div>
+ <button id="resultNext" class="primary"></button><button id="resultBack" class="textbtn">VOLTAR AO MENU</button>
+</div></div>`;
 let game=new Game({role:'Ponteiro',difficulty:'Normal',quick:true,training:false},()=>{});let view=new View(document.querySelector('#stage'),game.players);let active=false, audio=null;
 function sound(type,position){if(type==='point')view.showCoachReaction(position?.team);if(type==='impact'){view.showImpact(position);if(audio)playExplosion(audio);return}if(!audio)return;let o=audio.createOscillator(),g=audio.createGain();let f={hit:190,pass:300,serve:240,point:520,whistle:900,net:120,jump:200,block:145}[type]||200;o.type=type==='whistle'?'sine':'triangle';o.frequency.setValueAtTime(f,audio.currentTime);o.frequency.exponentialRampToValueAtTime(f*.65,audio.currentTime+.12);g.gain.setValueAtTime(.025,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.13);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+.14)}
 const $=id=>document.getElementById(id);
+const progressKey='volley-rino-progress-v1';
+let saved;
+try{saved=JSON.parse(localStorage.getItem(progressKey));}catch{}
+let progress={
+ stage:Number.isInteger(saved?.stage)?Math.max(0,Math.min(career.length,saved.stage)):0,
+ losses:Number.isInteger(saved?.losses)?Math.max(0,Math.min(3,saved.losses)):0,
+ xandao:saved?.xandao===true,
+};
+let mode='match',warmup=0,resultHandled=false;
+function saveProgress(){
+ try{localStorage.setItem(progressKey,JSON.stringify(progress));}catch{}
+ $('coachName').textContent=progress.xandao?'TÉCNICO · XANDÃO':'TÉCNICO · JEFFERSON';
+ $('career').textContent=progress.stage===career.length?'PÓDIO':progress.stage?'CONTINUAR CARREIRA':'CARREIRA';
+}
+saveProgress();
+function showResult(title,content,label,next){
+ $('resultTitle').textContent=title;
+ $('resultContent').innerHTML=content;
+ $('resultNext').textContent=label;
+ $('resultNext').onclick=next;
+ $('result').classList.remove('hidden');
+ $('resultNext').focus();
+}
+function showPodium(){
+ const silver=opponents.find(team=>team.id===career[3].rivalTeam);
+ const bronze=opponents.find(team=>team.id===career[2].rivalTeam);
+ showResult('CAMPEÕES DA CARREIRA',`<div class="podium" aria-label="Pódio da carreira">
+  <div class="podium-silver"><span aria-label="Prata">🥈</span><strong>${silver.name}</strong><b>2º</b></div>
+  <div class="podium-gold"><span aria-label="Ouro">🥇</span><strong>${homeTeam.name}</strong><b>1º</b></div>
+  <div class="podium-bronze"><span aria-label="Bronze">🥉</span><strong>${bronze.name}</strong><b>3º</b></div>
+ </div><p>4º Phanters · 5º Humanas</p>`,'NOVA CARREIRA',()=>{
+  progress.stage=0;
+  saveProgress();
+  start('career');
+ });
+}
+function finishMatch(){
+ if(resultHandled||!game.rules.over)return;
+ resultHandled=true;
+ const won=game.rules.sets[0]>game.rules.sets[1];
+ const previous=progress;
+ progress=matchProgress(progress,{won,mode,quick:game.rules.quick});
+ saveProgress();
+ if(!previous.xandao&&progress.xandao){
+  showResult('VOCÊ DESBLOQUEOU UM NOVO TÉCNICO',`<img class="unlock-portrait" src="${xandaoPortrait}" alt="Retrato pixelado do Xandão">
+   <strong class="unlock-name">Lendário treinador XANDÃAAAO</strong>
+   <p>Após uma sequência de derrotas, volte às suas origens e treine fundamento incessantemente para que possa reaprender a jogar vôlei.</p>`,'JOGAR DE NOVO',()=>start('match'));
+ }else if(mode==='career'){
+  if(progress.stage===career.length){showPodium();return;}
+  const next=opponents.find(team=>team.id===career[progress.stage].rivalTeam);
+  showResult(won?'VITÓRIA':'DERROTA',`<p>${won?'Próximo adversário':'Revanche'} · ${next.name}</p>`,won?'PRÓXIMA PARTIDA':'TENTAR DE NOVO',()=>start('career'));
+ }
+}
 function updateAthleteCard(){
  const athlete=athleteById($('athlete').value);
  if(!athlete)return;
  const portrait=$('athletePortrait');
- const [x,y,width,height]=athlete.portrait;
- const sheetWidth=1774,sheetHeight=887;
- portrait.style.aspectRatio=width+' / '+height;
- portrait.style.backgroundImage='url('+teamReference+')';
- portrait.style.backgroundSize=(sheetWidth/width)*100+'% '+(sheetHeight/height)*100+'%';
- portrait.style.backgroundPosition=x/(sheetWidth-width)*100+'% '+y/(sheetHeight-height)*100+'%';
+ const portraitUrl=athletePortraits['./assets/retratos/'+athlete.id+'.png'];
+ portrait.classList.toggle('is-closeup',Boolean(portraitUrl));
+ portrait.style.backgroundImage='url('+(portraitUrl||teamReference)+')';
+ if(portraitUrl){
+  portrait.style.aspectRatio='1 / 1';
+  portrait.style.backgroundSize='150%';
+  portrait.style.backgroundPosition='50% 14%';
+ }else{
+  const [x,y,width,height]=athlete.portrait;
+  const sheetWidth=1774,sheetHeight=887;
+  portrait.style.aspectRatio=width+' / '+height;
+  portrait.style.backgroundSize=(sheetWidth/width)*100+'% '+(sheetHeight/height)*100+'%';
+  portrait.style.backgroundPosition=x/(sheetWidth-width)*100+'% '+y/(sheetHeight-height)*100+'%';
+ }
  portrait.setAttribute('aria-label','Retrato de '+athlete.name);
  $('athleteName').textContent=athlete.name;
  $('athletePosition').textContent=athlete.role;
@@ -81,12 +149,20 @@ function showMatchTeams([home,rival]){
 
 const touchLayout=window.matchMedia('(pointer: coarse), (max-width: 700px), (max-height: 500px) and (max-width: 900px)');
 
-function start(training){
+function start(nextMode){
+ if(nextMode==='career'&&progress.stage===career.length){showPodium();return;}
+ mode=nextMode;
+ const training=mode==='training';
+ const stage=mode==='career'?career[progress.stage]:null;
+ resultHandled=false;
+ $('result').classList.add('hidden');
  touch.reset();
  if(!audio)audio=new AudioContext();
  audio.resume();
- game=new Game({role:$('role').value,athlete:$('athlete').value,difficulty:$('difficulty').value,
-  quick:$('quick').checked,training,rivalTeam:$('rivalTeam').value},sound);
+ game=new Game({role:$('role').value,athlete:$('athlete').value,difficulty:stage?.difficulty??$('difficulty').value,
+  quick:stage?true:$('quick').checked,training,rivalTeam:stage?.rivalTeam??$('rivalTeam').value},sound);
+ game.xandao=progress.xandao;
+ warmup=game.xandao&&!training?10:0;
  view.resetMatchArt();
  showMatchTeams(game.teams);
  if(training){game.rules.server=1;game.serve();}
@@ -98,13 +174,16 @@ function start(training){
  if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
  updateHUD();
 }
-$('play').onclick=()=>start(false);
-$('train').onclick=()=>start(true);
+$('play').onclick=()=>start('match');
+$('train').onclick=()=>start('training');
+$('career').onclick=()=>start('career');
 $('resume').onclick=()=>{game.paused=false;$('pause').classList.add('hidden')};
-$('restart').onclick=$('playAgain').onclick=()=>start(game.training);
-$('back').onclick=()=>{
+$('restart').onclick=$('playAgain').onclick=()=>start(mode);
+$('back').onclick=$('resultBack').onclick=()=>{
  touch.reset();
  active=false;
+ warmup=0;
+ $('result').classList.add('hidden');
  tactics.sync();
  game.paused=false;
  $('pause').classList.add('hidden');
@@ -114,7 +193,7 @@ $('back').onclick=()=>{
 $('helpBtn').onclick=()=>{touch.reset();$('help').classList.remove('hidden');if(active)game.paused=true};
 $('closeHelp').onclick=()=>{$('help').classList.add('hidden');if(active)game.paused=false};
 
-function canPlay(){return active&&!game.paused&&!game.rules.over&&!game.liberoOff}
+function canPlay(){return active&&!game.paused&&!game.rules.over&&warmup<=0&&!game.liberoOff}
 function setAim(x,y,mobile=false){
  const point=view.pointer(x,y);
  if(!point)return;
@@ -132,7 +211,7 @@ function endAim(){
  cancelAim();
  if(canPlay())game.userTouch();
 }
-function togglePause(){if(!active)return;game.paused=!game.paused;$('pause').classList.toggle('hidden',!game.paused)}
+function togglePause(){if(!active||!$('result').classList.contains('hidden'))return;game.paused=!game.paused;$('pause').classList.toggle('hidden',!game.paused)}
 function moveAim(x,y,dt){
  const angle=game.cameraYaw||0;
  game.aim=courtAim({
@@ -171,14 +250,14 @@ canvas.addEventListener('pointerdown',e=>{
 function updateHUD(){
  const rules=game.rules;
  const player=[game.playerName(game.controlled),game.controlled.role].filter(Boolean).join(' · ');
- $('playerRole').textContent=(game.liberoOff?'LÍBERO · FORA':player.toUpperCase())+(game.training?' · TREINO':'');
+ $('playerRole').textContent=(game.liberoOff?'LÍBERO · FORA':player.toUpperCase())+(game.training?' · TREINO':mode==='career'?' · CARREIRA '+Math.min(career.length,progress.stage+(rules.over?0:1))+'/'+career.length:'');
  $('scoreA').textContent=rules.points[0];
  $('scoreB').textContent=rules.points[1];
  $('sets').textContent=rules.sets.join(' : ');
  $('serve').textContent='● SAQUE '+game.teams[rules.server].shortName.toUpperCase();
  $('touches').textContent=rules.touches+' / 3 TOQUES';
  $('rotation').textContent='ROTAÇÃO '+rotations[rules.rotation[0]].name;
- const message=rules.over?'Fim de jogo':game.awaitUserServe?'Seu saque':game.message;
+ const message=warmup>0?`Aquecimento · ${Math.ceil(warmup)} s`:rules.over?'Fim de jogo':game.awaitUserServe?'Seu saque':game.message;
  if($('message').textContent!==message)$('message').textContent=message;
  const hud=$('hud');
  if(rules.over&&!hud.classList.contains('is-ended'))touch.reset();
@@ -189,7 +268,7 @@ function updateHUD(){
 }
 
 function matchHint(){
- if(game.rules.over)return '';
+ if(game.rules.over||warmup>0)return '';
  if(game.liberoOff)return 'AGUARDE O RETORNO DO LÍBERO';
  if(!game.paused&&game.controlled.apexHold>0)return game.awaitUserServe?'BATA AGORA · SAQUE VIAGEM':'BATA AGORA · CORTADA MÁXIMA';
  if(touchLayout.matches){
@@ -208,12 +287,19 @@ function frame(now){
  last=now;
  acc+=dt;
  while(acc>=1/60){
-  if(active){touch.update(1/60);game.update(1/60);}
+  if(active){
+   if(warmup>0){
+    if(!game.paused)warmup=Math.max(0,warmup-1/60);
+   }else{
+    touch.update(1/60);
+    game.update(1/60);
+   }
+  }
   acc-=1/60;
  }
- view.render(game);
+ view.render(game,warmup>0?10-warmup:null);
  tactics.render(now);
- if(active)updateHUD();
+ if(active){updateHUD();finishMatch();}
  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

@@ -342,3 +342,19 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
 @media (max-width:700px) {
  .tactics-debug { top:112px;width:min(330px,calc(100vw - 24px));max-height:42vh; }
 }
+#result > div {width:min(540px,92vw);max-height:88dvh;overflow:auto;text-align:center}
+#result h2 {line-height:.95;font-size:clamp(30px,6vw,54px)}
+#result .textbtn {margin-top:10px;padding:10px}
+.unlock-portrait {width:min(144px,28vh);image-rendering:pixelated}
+.unlock-name {display:block;color:var(--accent);font-size:1.1rem;margin-top:8px}
+.podium {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:5px;margin-top:22px}
+.podium > div {display:grid;grid-template-rows:auto auto 1fr;align-items:center;justify-items:center;gap:5px;padding:8px 4px;background:linear-gradient(#212124,var(--stand));border-top:3px solid var(--medal)}
+.podium span {font-size:clamp(26px,6vw,52px)}
+.podium strong {font-size:clamp(11px,2.5vw,16px)}
+.podium b {color:var(--medal);font:900 clamp(28px,6vw,48px) 'Barlow Condensed',sans-serif}
+.podium-silver {--medal:#e2e6ef;--stand:#39404c;min-height:135px}
+.podium-gold {--medal:#ffda64;--stand:#634511;min-height:174px}
+.podium-bronze {--medal:#ffa76c;--stand:#56331f;min-height:110px}
+.athlete-portrait.is-closeup {outline:2px solid var(--accent);outline-offset:-2px}
+.menu-actions button {min-width:0}
+@media(max-width:430px){.menu-actions{gap:5px}.menu-actions button{padding-inline:8px;font-size:10px}}
