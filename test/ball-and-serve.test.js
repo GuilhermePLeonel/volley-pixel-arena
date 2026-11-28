@@ -104,7 +104,7 @@ test('o mesmo toque dá largada no chão, cortada média no ar e impacto máximo
  assert.ok(resultingSpeed.peak>resultingSpeed.ascending);
 });
 
-test('a janela no topo dura cerca de 160 ms e congela o atleta até a descida',()=>{
+test('a janela no topo dura cerca de 280 ms e congela o atleta até a descida',()=>{
  const g=makeGame(),p=g.controlled;
  Object.assign(p,{x:-2,z:0});
  Object.assign(g.ball,{live:true,x:5,y:5,gravity:0,targetTeam:1});
@@ -113,16 +113,40 @@ test('a janela no topo dura cerca de 160 ms e congela o atleta até a descida',(
  while(p.apexPending)g.update(frame);
  const peak={x:p.x,y:p.y,z:p.z};
  const remaining=p.apexHold;
- assert.ok(remaining>=.16-frame&&remaining<=.16);
+ assert.ok(remaining>=.28-frame&&remaining<=.28);
  g.touchMove={x:1,y:0};
- for(let i=0;i<8;i++){
+ for(let i=0;i<15;i++){
   g.update(frame);
   assert.deepEqual({x:p.x,y:p.y,z:p.z},peak);
   assert.equal(g.touchStyle().power,1);
  }
- g.update(frame);
+ while(p.apexHold>0)g.update(frame);
  g.update(frame);
  assert.ok(p.y<peak.y);
  assert.ok(p.z>peak.z);
  assert.equal(g.touchStyle().power,.65);
+});
+
+test('sacar no ápice acelera a bola, mantém altura de rede e ativa o rastro',()=>{
+ function serve(atPeak){
+  const impacts=[];
+  const g=new Game({role:'Levantador',difficulty:'Normal',quick:true,training:false},(type,data)=>{
+   if(type==='impact')impacts.push(data);
+  });
+  g.aim={x:7,z:1};
+  g.special();
+  for(let i=0;i<20;i++)g.update(frame);
+  if(atPeak)while(g.controlled.apexPending)g.update(frame);
+  g.touchAiming=true;
+  const preview=g.previewShot();
+  assert.ok(g.userTouch());
+  assert.ok(Math.abs(g.ball.vx-(preview.destination.x-preview.origin.x)/preview.duration)<1e-9);
+  const t=-g.ball.x/g.ball.vx;
+  assert.ok(g.ball.y+g.ball.vy*t-.5*g.ball.gravity*t*t>=2.83-1e-9);
+  assert.equal(g.ball.comet,atPeak);
+  assert.equal(impacts.length,atPeak?1:0);
+  assert.equal(g.message,atPeak?'Saque viagem potente':'Saque viagem');
+  return g.ball.vx;
+ }
+ assert.ok(serve(true)>serve(false)*1.25);
 });

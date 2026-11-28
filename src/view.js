@@ -91,7 +91,12 @@ export class View{
   this.coachBubble.setAttribute('role','status');
   this.coachBubble.hidden=true;
   this.host.appendChild(this.coachBubble);
-  this.speechPoint=new THREE.Vector3();
+  this.stagePoint=new THREE.Vector3();
+  this.apexCue=document.createElement('div');
+  this.apexCue.className='apex-cue';
+  this.apexCue.setAttribute('aria-hidden','true');
+  this.apexCue.hidden=true;
+  this.host.appendChild(this.apexCue);
   this.warmupBalls=Array.from({length:3},()=>{
    const ball=this.ball.clone();ball.visible=false;this.scene.add(ball);return ball;
   });
@@ -123,10 +128,26 @@ export class View{
   }
  }
  projectStage(position,dx,dy,width,height){
-  const point=this.speechPoint.copy(position).applyMatrix4(this.camera.matrixWorldInverse);
+  const point=this.stagePoint.copy(position).applyMatrix4(this.camera.matrixWorldInverse);
   point.x+=dx;point.y+=dy;
   point.applyMatrix4(this.camera.projectionMatrix);
   return {x:(point.x+1)*width/2,y:(1-point.y)*height/2};
+ }
+ updateApexCue(game,canPlay){
+  const cue=this.apexCue;
+  const visible=canPlay&&game.controlled.apexHold>0&&(game.awaitUserServe||game.ball.live);
+  cue.hidden=!visible;
+  if(!visible)return;
+  const text=game.awaitUserServe?'SAQUE!':'CORTE!';
+  if(cue.textContent!==text)cue.textContent=text;
+  const mesh=this.playerMeshes[game.players.indexOf(game.controlled)];
+  const {sprite}=mesh;
+  const width=this.host.clientWidth,height=this.host.clientHeight;
+  this.camera.updateMatrixWorld();
+  const head=this.projectStage(sprite.position,0,sprite.scale.y*(1-sprite.center.y),width,height);
+  const x=Math.max(8,Math.min(width-cue.offsetWidth-8,head.x-cue.offsetWidth/2));
+  const y=Math.max(8,head.y-cue.offsetHeight-10);
+  cue.style.transform=`translate(${Math.round(x)}px,${Math.round(y)}px)`;
  }
  updateCoachSpeech(game,warming){
   const text=warming?'Aquecimento até o GN\nficar sóbrio!':
@@ -224,5 +245,5 @@ export class View{
   this.ballShadow.position.set(ball.x,.1,ball.z);
   this.ballShadow.scale.setScalar(Math.max(.35,1-ball.y*.08));
  }
- render(game,warmup=null){let now=performance.now(),dt=Math.min((now-this.lastRender)/1000,.1);this.lastRender=now;this.updateCoaches(game,dt);this.stands.update(dt);this.updateCometTrail(game,dt);if(this.impactTime>0){this.impactTime=Math.max(0,this.impactTime-dt);let progress=1-this.impactTime/.42;this.impact.scale.setScalar(.6+progress*2);this.impact.material.opacity=1-progress;this.impact.material.rotation=progress*.5;this.impact.visible=this.impactTime>0}let desired=game.ball.live?THREE.MathUtils.clamp(game.ball.z*.045,-.22,.22):0;this.cameraYaw+=(desired-this.cameraYaw)*(1-Math.exp(-dt*1.8));this.camera.position.set(-27*Math.cos(this.cameraYaw),20,27*Math.sin(this.cameraYaw));this.camera.lookAt(0,0,0);game.cameraYaw=this.cameraYaw;for(let i=0;i<game.players.length;i++){let p=game.players[i],m=this.playerMeshes[i];m.sprite.position.set(p.x,.1+p.y,p.z);this.updatePlayerSprite(p,m,game.teams[p.team]);m.shadow.position.set(p.x,.1,p.z);m.shadow.scale.setScalar(1-p.y*.12);m.marker.visible=p===game.controlled&&!game.liberoOff;m.marker.position.set(p.x,.11,p.z)}let b=game.ball;this.updateBallSprite(game);this.aim.position.set(game.aim.x,.1,game.aim.z);this.aim.material.color.set(game.aimValid()?0xfff4e7:0xff7a70);let pts=[];let shot=game.previewShot();if(shot){let t=shot.destination,T=shot.duration;if(shot.waypoint){pts.push(new THREE.Vector3(b.x,b.y,b.z),new THREE.Vector3(shot.waypoint.x,shot.waypoint.y,shot.waypoint.z));if(!shot.blockedAngle)pts.push(new THREE.Vector3(t.x,t.y,t.z))}else for(let i=0;i<=24;i++){let f=i/24;let y=b.y+(t.y-b.y)*f+.5*shot.gravity*T*T*f*(1-f);pts.push(new THREE.Vector3(b.x+(t.x-b.x)*f,y,b.z+(t.z-b.z)*f))}}this.line.geometry.setFromPoints(pts);this.updateSetIndicator(game);this.tacticalOverlay.update(game);this.updateWarmupArt(game,warmup);this.updateCoachSpeech(game,warmup!==null);this.renderer.render(this.scene,this.camera)}
+ render(game,warmup=null,canPlay=false){let now=performance.now(),dt=Math.min((now-this.lastRender)/1000,.1);this.lastRender=now;this.updateCoaches(game,dt);this.stands.update(dt);this.updateCometTrail(game,dt);if(this.impactTime>0){this.impactTime=Math.max(0,this.impactTime-dt);let progress=1-this.impactTime/.42;this.impact.scale.setScalar(.6+progress*2);this.impact.material.opacity=1-progress;this.impact.material.rotation=progress*.5;this.impact.visible=this.impactTime>0}let desired=game.ball.live?THREE.MathUtils.clamp(game.ball.z*.045,-.22,.22):0;this.cameraYaw+=(desired-this.cameraYaw)*(1-Math.exp(-dt*1.8));this.camera.position.set(-27*Math.cos(this.cameraYaw),20,27*Math.sin(this.cameraYaw));this.camera.lookAt(0,0,0);game.cameraYaw=this.cameraYaw;for(let i=0;i<game.players.length;i++){let p=game.players[i],m=this.playerMeshes[i];m.sprite.position.set(p.x,.1+p.y,p.z);this.updatePlayerSprite(p,m,game.teams[p.team]);m.shadow.position.set(p.x,.1,p.z);m.shadow.scale.setScalar(1-p.y*.12);m.marker.visible=p===game.controlled&&!game.liberoOff;m.marker.position.set(p.x,.11,p.z)}let b=game.ball;this.updateBallSprite(game);this.aim.position.set(game.aim.x,.1,game.aim.z);this.aim.material.color.set(game.aimValid()?0xfff4e7:0xff7a70);let pts=[];let shot=game.previewShot();if(shot){let t=shot.destination,T=shot.duration,origin=shot.origin||b;if(shot.waypoint){pts.push(new THREE.Vector3(b.x,b.y,b.z),new THREE.Vector3(shot.waypoint.x,shot.waypoint.y,shot.waypoint.z));if(!shot.blockedAngle)pts.push(new THREE.Vector3(t.x,t.y,t.z))}else for(let i=0;i<=24;i++){let f=i/24;let y=b.y+(t.y-b.y)*f+.5*shot.gravity*T*T*f*(1-f);pts.push(new THREE.Vector3(b.x+(t.x-b.x)*f,y,b.z+(t.z-b.z)*f))}}this.line.geometry.setFromPoints(pts);this.updateSetIndicator(game);this.tacticalOverlay.update(game);this.updateWarmupArt(game,warmup);this.updateCoachSpeech(game,warmup!==null);this.updateApexCue(game,canPlay);this.renderer.render(this.scene,this.camera)}
 }

@@ -364,6 +364,13 @@ body:has(.menu.hidden) .top-right :is(.live-dot,.venue,.divider) {display:none}
 }
 .coach-speech::before {background:#29180e}
 .coach-speech::after {background:#fff2d7;transform:translateY(-3px) scaleX(.72)}
+.apex-cue {
+ position:absolute;top:0;left:0;pointer-events:none;
+ padding:10px 15px;background:#ffb33f;color:#200f04;
+ clip-path:polygon(0 36%,12% 29%,7% 13%,27% 17%,35% 0,47% 12%,63% 2%,70% 15%,90% 8%,87% 26%,100% 35%,91% 51%,100% 66%,83% 70%,87% 91%,66% 83%,55% 100%,44% 88%,28% 99%,25% 82%,7% 86%,13% 67%,0 63%,8% 49%);
+ font:900 clamp(14px,2.3vw,19px)/1 'Barlow Condensed',sans-serif;
+ letter-spacing:.05em;text-shadow:0 1px #fff4cf;
+}
 .podium {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:5px;margin-top:22px}
 .podium > div {display:grid;grid-template-rows:auto auto 1fr;align-items:center;justify-items:center;gap:5px;padding:8px 4px;background:linear-gradient(#212124,var(--stand));border-top:3px solid var(--medal)}
 .podium span {font-size:clamp(26px,6vw,52px)}

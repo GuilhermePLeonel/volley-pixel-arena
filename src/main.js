@@ -53,7 +53,7 @@ app.innerHTML=`<div id="stage"></div><div class="grain"></div><header class="top
    </div>
   </div>
  </div>
-</div><div class="corner-label">VOLLEY RINO <span>✳</span> TEMPORADA 01</div><div id="pause" class="modal hidden"><div><small>TEMPO TÉCNICO</small><h2>JOGO PAUSADO</h2><button id="resume" class="primary">CONTINUAR</button><button id="restart" class="secondary">NOVA PARTIDA</button><button id="back" class="textbtn">VOLTAR AO MENU</button></div></div><div id="help" class="modal hidden"><div><small>GUIA RÁPIDO</small><h2>COMO JOGAR</h2><p class="touch-guide">No celular, arraste o analógico à esquerda para andar ou correr. Toque em PULAR para saltar ou mergulhar como líbero. Toque no botão maior para bater ou arraste nele para ajustar a mira antes de soltar. Você também pode tocar na quadra para mirar.</p><p class="desktop-guide"><b>W A S D</b> movimenta em relação à câmera; <b>Shift</b> corre e <b>Espaço</b> salta ou mergulha.</p><p class="desktop-guide">Mire no chão com o mouse e clique com o botão esquerdo para tocar.</p><p>No chão, o toque para o outro lado sai como largada. No ar, a batida é média. Acerte a bola no topo do salto para a cortada máxima e o rastro de cometa. O aviso “Bata agora” indica esse momento. Para o saque viagem, pule antes de tocar na bola.</p><p>Nos dois primeiros contatos, a bola em queda sobe automaticamente quando entra no seu alcance. O terceiro toque é manual. O círculo verde marca o destino do levantamento e o rótulo identifica quem deve atacar.</p><button id="closeHelp" class="primary">ENTENDI</button></div></div>
+</div><div class="corner-label">VOLLEY RINO <span>✳</span> TEMPORADA 01</div><div id="pause" class="modal hidden"><div><small>TEMPO TÉCNICO</small><h2>JOGO PAUSADO</h2><button id="resume" class="primary">CONTINUAR</button><button id="restart" class="secondary">NOVA PARTIDA</button><button id="back" class="textbtn">VOLTAR AO MENU</button></div></div><div id="help" class="modal hidden"><div><small>GUIA RÁPIDO</small><h2>COMO JOGAR</h2><p class="touch-guide">No celular, arraste o analógico à esquerda para andar ou correr. Toque em PULAR para saltar ou mergulhar como líbero. Toque no botão maior para bater ou arraste nele para ajustar a mira antes de soltar. Você também pode tocar na quadra para mirar.</p><p class="desktop-guide"><b>W A S D</b> movimenta em relação à câmera; <b>Shift</b> corre e <b>Espaço</b> salta ou mergulha.</p><p class="desktop-guide">Mire no chão com o mouse e clique com o botão esquerdo para tocar.</p><p>No chão, o toque para o outro lado sai como largada. No ar, a batida é média. Acerte a bola no topo do salto para a cortada máxima e o rastro de cometa. O aviso “CORTE!” acima do atleta indica esse momento. No saque, pule e espere o aviso “SAQUE!” para sacar com força máxima.</p><p>Nos dois primeiros contatos, a bola em queda sobe automaticamente quando entra no seu alcance. O terceiro toque é manual. O círculo verde marca o destino do levantamento e o rótulo identifica quem deve atacar.</p><button id="closeHelp" class="primary">ENTENDI</button></div></div>
 <div id="result" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="resultTitle"><div>
  <h2 id="resultTitle"></h2><div id="resultContent"></div>
  <button id="resultNext" class="primary"></button><button id="resultBack" class="textbtn">VOLTAR AO MENU</button>
@@ -284,7 +284,7 @@ function updateHUD(){
 function matchHint(){
  if(game.rules.over||warmup>0)return '';
  if(game.liberoOff)return 'AGUARDE O RETORNO DO LÍBERO';
- if(!game.paused&&game.controlled.apexHold>0)return game.awaitUserServe?'BATA AGORA · SAQUE VIAGEM':'BATA AGORA · CORTADA MÁXIMA';
+ if(!game.paused&&game.controlled.apexHold>0)return game.awaitUserServe?'BATA AGORA · SAQUE VIAGEM POTENTE':'BATA AGORA · CORTADA MÁXIMA';
  if(touchLayout.matches){
   if(game.awaitUserServe)return 'TOQUE PARA SACAR · USE PULAR PARA SAQUE VIAGEM';
   return 'TOQUE PARA BATER · ARRASTE PARA MIRAR';
@@ -311,7 +311,7 @@ function frame(now){
   }
   acc-=1/60;
  }
- view.render(game,warmup>0?10-warmup:null);
+ view.render(game,warmup>0?10-warmup:null,canPlay());
  tactics.render(now);
  if(active){updateHUD();finishMatch();}
  requestAnimationFrame(frame);

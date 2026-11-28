@@ -7,7 +7,7 @@ import {assignAthletes,athleteById,drawRivalRoster} from './roster.js';
 import {matchTeams} from './teams.js';
 
 const groundHeight=.24;
-const playerJumpHold=.16;
+const playerJumpHold=.28;
 const spinByTouch={serve:2.5,attack:3.8,block:2.8,set:1.6,pass:1.7};
 
 export class Game{
@@ -90,7 +90,21 @@ export class Game{
   launch(this.ball,target,duration);
   this.message='Simulação · ataque adversário P'+zone;
  }
- planServeShot(target,power,jumping){let b=this.ball,team=this.rules.server;let x=team?Math.min(-.5,target.x):Math.max(.5,target.x);let destination={x,z:target.z,y:.35};let gravity=jumping?16:9.8;let duration=jumping?1.2-.55*power:1.55-.32*power;let fraction=-b.x/(destination.x-b.x);let baseline=b.y+(destination.y-b.y)*fraction;let clearance=(2.83-baseline)/(.5*gravity*fraction*(1-fraction));if(clearance>0)duration=Math.max(duration,Math.sqrt(clearance));return {destination,duration:clamp(duration,.35,2.3),gravity,waypoint:null}}
+ planServeShot(target,power,{jumping=false,strong=false}={},origin=this.ball){
+  const x=this.rules.server?Math.min(-.5,target.x):Math.max(.5,target.x);
+  const destination={x,z:target.z,y:.35};
+  const gravity=strong?26:jumping?16:9.8;
+  let duration=strong?Math.hypot(x-origin.x,target.z-origin.z)/(MAX_SPIKE_SPEED*1.55):
+   jumping?1.2-.55*power:1.55-.32*power;
+  const fraction=-origin.x/(x-origin.x);
+  const baseline=origin.y+(destination.y-origin.y)*fraction;
+  const clearance=(2.83-baseline)/(.5*gravity*fraction*(1-fraction));
+  if(clearance>0)duration=Math.max(duration,Math.sqrt(clearance));
+  return {origin,destination,duration:clamp(duration,.35,2.3),gravity,waypoint:null};
+ }
+ serveStyle(){
+  return {jumping:this.controlled.y>.1,strong:this.controlled.apexHold>0};
+ }
  touchStyle(){
   const p=this.controlled;
   if(p.role==='Líbero'||p.y<=.2)return {power:.25,button:2};
@@ -104,7 +118,7 @@ export class Game{
   return this.contact(this.controlled,this.aim,power,false,null,button);
  }
  playerName(player){return player.team===0?athleteById(player.athleteId)?.name:undefined}
- userServe(target,power){if(!this.awaitUserServe||this.ball.live||this.paused||this.rules.over)return false;let jumping=this.controlled.y>.1;this.doServe({target,power:clamp(power,.12,1),jumping});return true}
+ userServe(target,power){if(!this.awaitUserServe||this.ball.live||this.paused||this.rules.over)return false;this.doServe({target,power:clamp(power,.12,1),...this.serveStyle()});return true}
  doServe(manual=null){
   const team=this.rules.server, receiving=1-team, rotation=this.rules.rotation[team];
   const server=this.players[team*6+serverIndex(rotation)];
@@ -117,19 +131,20 @@ export class Game{
    p===server||(Math.abs(p.x)<=9.05&&Math.abs(p.z)<=4.55));
   if(!onCourt){this.point(receiving,'Jogador fora da quadra no saque');return;}
   Object.assign(b,{x:server.x,z:server.z,y:1.8+(manual?server.y:0),
-   pendingFault:null,assistTarget:null,comet:false,targetTeam:receiving});
+   pendingFault:null,assistTarget:null,comet:manual?.strong??false,targetTeam:receiving});
   server.action='serve';server.actionPose='serve';server.actionTime=.55;
   this.awaitUserServe=false;this.serveFlight=true;this.firstAttackTeam=receiving;this.hitLock=.25;
   Object.assign(this.rules,{side:team,touches:1,last:server.id,lastTouchTeam:team});
   let shot;
-  if(manual)shot=this.planServeShot(manual.target,manual.power,manual.jumping);
+  if(manual)shot=this.planServeShot(manual.target,manual.power,manual);
   else{
    const target=orient(team,5.8+Math.random()*2.05,(Math.random()-.5)*7.15);
-   shot=this.planServeShot(target,.38,false);
+   shot=this.planServeShot(target,.38);
   }
   this.trackFlight('serve',server,shot.destination);
   launch(b,shot.destination,shot.duration,shot.gravity);
-  this.message=manual?(manual.jumping?'Saque viagem':'Saque parado'):'Rally em andamento';
+  this.message=manual?(manual.strong?'Saque viagem potente':manual.jumping?'Saque viagem':'Saque parado'):'Rally em andamento';
+  if(b.comet)this.notify('impact',{x:b.x,y:b.y,z:b.z});
   this.notify('serve');
  }
  aimValid(){return Math.abs(this.aim.x)<=9&&Math.abs(this.aim.z)<=4.5}
@@ -213,7 +228,10 @@ export class Game{
  previewShot(){
   if(!this.touchAiming||(!this.awaitUserServe&&!this.ball.live))return null;
   const {power,button}=this.touchStyle();
-  if(this.awaitUserServe)return this.planServeShot(this.aim,power,this.controlled.y>.1);
+  if(this.awaitUserServe){
+   const {x,y,z}=this.controlled;
+   return this.planServeShot(this.aim,power,this.serveStyle(),{x,y:1.8+y,z});
+  }
   const touches=this.rules.side===this.controlled.team?this.rules.touches+1:1;
   return this.planShot(this.controlled,this.aim,power,touches,button);
  }
